@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>High-Speed Line Following Robot - BLE</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --text: #333333;
+            --muted: #666666;
+            --border: #dddddd;
+            --primary: #4caf50;
+            --primary-hover: #45a049;
+            --danger: #f44336;
+            --danger-hover: #da190b;
+            --warning: #ff9800;
+            --warning-hover: #f57c00;
+            --info: #2196f3;
+            --info-hover: #0b7dda;
+            --shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1320px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 22px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            font-size: 30px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.95;
+        }
+
+        .status-bar {
+            background: var(--card);
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+            gap: 12px;
+        }
+
+        .status-item {
+            text-align: center;
+            padding: 8px;
+            border-radius: 8px;
+            background: #f8f9fb;
+        }
+
+        .status-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .status-value {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .connected {
+            color: var(--primary);
+        }
+
+        .disconnected {
+            color: var(--danger);
+        }
+
+        .running {
+            color: var(--primary);
+        }
+
+        .stopped {
+            color: var(--danger);
+        }
+
+        .pending {
+            color: var(--warning);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 16px;
+            color: var(--text);
+            border-bottom: 2px solid #eeeeee;
+            padding-bottom: 10px;
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 14px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 6px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 12px 18px;
+            transition: all 0.2s ease;
+            margin: 5px;
+            touch-action: manipulation;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+        }
+
+        .btn-danger:hover {
+            background: var(--danger-hover);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+        }
+
+        .btn-warning:hover {
+            background: var(--warning-hover);
+        }
+
+        .btn-info {
+            background: var(--info);
+        }
+
+        .btn-info:hover {
+            background: var(--info-hover);
+        }
+
+        .btn-dark {
+            background: #333333;
+        }
+
+        .btn-dark:hover {
+            background: #1f1f1f;
+        }
+
+        .btn-light {
+            background: #f8f8f8;
+            color: #111111;
+            border: 1px solid #cccccc;
+        }
+
+        .btn-light:hover {
+            background: #ececec;
+        }
+
+        .full-width {
+            width: calc(100% - 10px);
+        }
+
+        .row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            font-weight: bold;
+            color: #555555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .mode-banner {
+            margin-top: 6px;
+            padding: 14px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: bold;
+            color: white;
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+        }
+
+        .mode-banner.auto {
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+        }
+
+        .mode-banner.manual {
+            background: linear-gradient(135deg, #2196f3 0%, #1565c0 100%);
+        }
+
+        .dpad {
+            display: grid;
+            grid-template-columns: repeat(3, 70px);
+            gap: 10px;
+            justify-content: center;
+            margin: 10px 0 16px;
+        }
+
+        .dpad-spacer {
+            visibility: hidden;
+        }
+
+        .dpad-btn {
+            width: 70px;
+            height: 70px;
+            margin: 0;
+            font-size: 24px;
+            background: #5c6bc0;
+        }
+
+        .dpad-btn:hover {
+            background: #4b59af;
+        }
+
+        .dpad-btn.is-active {
+            box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.5);
+            transform: scale(0.98);
+        }
+
+        .bit-panel {
+            background: #f8f9fb;
+            border: 1px solid #e8ebf0;
+            border-radius: 10px;
+            padding: 14px;
+        }
+
+        .bit-toggle-group {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .bit-toggle {
+            margin: 0;
+            min-height: 76px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .bit-toggle .bit-name {
+            font-size: 12px;
+            opacity: 0.8;
+            text-transform: uppercase;
+        }
+
+        .bit-toggle .bit-state {
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        .bit-preview {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .bit-preview-code {
+            font-family: "Courier New", monospace;
+            font-size: 26px;
+            font-weight: bold;
+            letter-spacing: 4px;
+            background: white;
+            border: 2px solid #e1e4ea;
+            border-radius: 8px;
+            padding: 8px 14px;
+            min-width: 132px;
+            text-align: center;
+        }
+
+        .bit-legend {
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5;
+        }
+
+        .sensor-top {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .encoder-readings {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(120px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .encoder-count {
+            font-family: "Courier New", monospace;
+            font-size: 28px;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .mini-stat {
+            background: #f8f9fb;
+            border: 1px solid #eceff4;
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .mini-stat-label {
+            font-size: 12px;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .mini-stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .mini-bar {
+            height: 12px;
+            background: #e9edf4;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .mini-bar-fill {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, #2196f3 0%, #4caf50 100%);
+            transition: width 0.2s ease;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(70px, 1fr));
+            gap: 10px;
+        }
+
+        .sensor-card {
+            background: #f8f9fb;
+            border: 1px solid #e5e7ec;
+            border-radius: 8px;
+            padding: 10px 8px;
+            text-align: center;
+        }
+
+        .sensor-card.active {
+            background: #333333;
+            color: white;
+        }
+
+        .sensor-name {
+            font-size: 12px;
+            margin-bottom: 6px;
+            color: inherit;
+        }
+
+        .sensor-value {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .sensor-state {
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .chart-wrap {
+            height: 260px;
+        }
+
+        .log {
+            background: #f8f8f8;
+            border: 1px solid #dddddd;
+            border-radius: 4px;
+            padding: 10px;
+            height: 260px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        @media (max-width: 900px) {
+            .status-bar {
+                grid-template-columns: repeat(2, minmax(120px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .row {
+                flex-direction: column;
+            }
+
+            .sensor-grid {
+                grid-template-columns: repeat(2, minmax(70px, 1fr));
+            }
+
+            .bit-toggle-group {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>High-Speed Line Following Robot</h1>
+            <p>Điều khiển và giám sát robot qua BLE UART</p>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-item">
+                <div class="status-label">Kết nối</div>
+                <div class="status-value disconnected" id="connectionStatus">Chưa kết nối</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Chế độ</div>
+                <div class="status-value" id="robotMode">---</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Robot</div>
+                <div class="status-value stopped" id="robotState">STOPPED</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Khoảng cách</div>
+                <div class="status-value" id="distanceStatus">0.0 cm</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Calib</div>
+                <div class="status-value pending" id="calibrationStatus">PENDING</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">IR</div>
+                <div class="status-value" id="irStatus">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Bit trắng/đen</div>
+                <div class="status-value" id="bitStatus">000</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="card">
+                <div class="card-title">Encoder GA25-370</div>
+                <div class="card-subtitle">Số tick quadrature nhận được qua BLE. Dấu +/- cho biết chiều đếm; chưa quy đổi RPM.</div>
+                <div class="encoder-readings">
+                    <div class="mini-stat">
+                        <div class="mini-stat-label">Bánh trái (ENC_L1/L2)</div>
+                        <div class="encoder-count" id="leftEncoderCount">0</div>
+                        <div class="hint">GPIO 21 / 22</div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-label">Bánh phải (ENC_R1/R2)</div>
+                        <div class="encoder-count" id="rightEncoderCount">0</div>
+                        <div class="hint">GPIO 32 / 33</div>
+                    </div>
+                </div>
+                <button class="btn btn-info" data-text="ENC_RESET">Đặt lại bộ đếm encoder</button>
+                <div class="hint" id="encoderConnectionHint">Chờ kết nối BLE để nhận dữ liệu encoder.</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Kết Nối Và Trạng Thái</div>
+                <button class="btn btn-primary full-width" id="connectBtn">Kết nối Bluetooth</button>
+                <div class="mode-banner" id="modeBanner">ĐANG CHỜ KẾT NỐI</div>
+                <p class="card-subtitle">
+                    Thiết bị sẽ tìm ESP32 BLE theo tên `ESP32_Robot` hoặc tiền tố `ESP32`.
+                    Sau khi kết nối, giao diện sẽ tự nhận log, sensor và cấu hình PID hiện tại.
+                </p>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Điều Khiển Chuyển Động</div>
+                <div class="dpad">
+                    <button class="btn dpad-spacer" aria-hidden="true"></button>
+                    <button class="btn dpad-btn" data-momentary="5">▲</button>
+                    <button class="btn dpad-spacer" aria-hidden="true"></button>
+
+                    <button class="btn dpad-btn" data-momentary="7">◀</button>
+                    <button class="btn dpad-spacer" aria-hidden="true"></button>
+                    <button class="btn dpad-btn" data-momentary="8">▶</button>
+
+                    <button class="btn dpad-spacer" aria-hidden="true"></button>
+                    <button class="btn dpad-btn" data-momentary="6">▼</button>
+                    <button class="btn dpad-spacer" aria-hidden="true"></button>
+                </div>
+                <div class="hint">Giữ nút hướng để điều khiển chuyển động; thả nút để gửi lệnh dừng.</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Chế Độ Và Lệnh Robot</div>
+                <div class="card-subtitle">
+                    Chọn mission AUTO trước, hiệu chuẩn theo thứ tự `CAL WHITE` rồi `CAL BLACK`, sau đó nhấn `START` để robot chạy.
+                </div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-primary full-width" data-text="AUTO1">AUTO 1</button></div>
+                    <div class="col"><button class="btn btn-primary full-width" data-text="AUTO2">AUTO 2</button></div>
+                </div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-primary full-width" data-text="AUTO3">AUTO 3</button></div>
+                    <div class="col"><button class="btn btn-info full-width" data-text="MANUAL">Thủ công</button></div>
+                </div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-primary full-width" data-text="START">START</button></div>
+                    <div class="col"><button class="btn btn-danger full-width" data-text="STOP">STOP</button></div>
+                </div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-light full-width" data-text="CAL_WHITE">CAL WHITE</button></div>
+                    <div class="col"><button class="btn btn-warning full-width" data-text="CAL_BLACK">CAL BLACK</button></div>
+                </div>
+                <div class="row">
+                    <div class="col"><button class="btn btn-info full-width" data-text="CAL_MOVE">CALIB DI CHUYỂN</button></div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Cấu Hình PID & Tốc Độ</div>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label" for="kpInput">Kp (S1)</label>
+                            <input class="form-control" id="kpInput" type="number" step="0.01" value="0.85">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label" for="kiInput">Ki (S2)</label>
+                            <input class="form-control" id="kiInput" type="number" step="0.001" value="0.000">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label" for="kdInput">Kd (S3)</label>
+                            <input class="form-control" id="kdInput" type="number" step="0.01" value="0.12">
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label" for="speedInput">Base Speed (S4)</label>
+                            <input class="form-control" id="speedInput" type="number" min="0" max="255" value="140">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label" for="turnSpeedInput">Turn Speed (S5)</label>
+                            <input class="form-control" id="turnSpeedInput" type="number" min="0" max="255" value="120">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label class="form-label" for="sharpTurnSpeedInput">Sharp Speed (S6)</label>
+                            <input class="form-control" id="sharpTurnSpeedInput" type="number" min="0" max="255" value="120">
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-warning full-width" id="pidBtn">Cập nhật Toàn Bộ PID</button>
+                <div class="hint">Thông số sẽ được gửi qua BLE bằng các lệnh !S1...!S6 tương ứng.</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Navigation Telemetry</div>
+                <div class="status-bar" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 0; box-shadow: none; padding: 0;">
+                    <div class="status-item">
+                        <div class="status-label">Error</div>
+                        <div class="status-value" id="errorValue">0</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">PID Output</div>
+                        <div class="status-value" id="outputValue">0</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Position</div>
+                        <div class="status-value" id="positionValue">3500</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-label">Turn Mode</div>
+                        <div class="status-value" id="turnModeValue">STRAIGHT</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Bit Trắng / Đen</div>
+                <div class="card-subtitle">
+                    `0 = đen`, `1 = trắng`. Bấm đổi trạng thái từng bit, sau đó nhấn gửi để web gửi chuỗi 3 bit về ESP.
+                </div>
+                <div class="bit-panel">
+                    <div class="bit-toggle-group">
+                        <button class="btn btn-dark bit-toggle" data-bit-index="0">
+                            <span class="bit-name">Bit 1</span>
+                            <span class="bit-state">ĐEN</span>
+                        </button>
+                        <button class="btn btn-dark bit-toggle" data-bit-index="1">
+                            <span class="bit-name">Bit 2</span>
+                            <span class="bit-state">ĐEN</span>
+                        </button>
+                        <button class="btn btn-dark bit-toggle" data-bit-index="2">
+                            <span class="bit-name">Bit 3</span>
+                            <span class="bit-state">ĐEN</span>
+                        </button>
+                    </div>
+                    <div class="bit-preview">
+                        <div class="bit-preview-code" id="bitPreview">000</div>
+                        <button class="btn btn-info" id="sendBitsBtn">Gửi bit sang ESP</button>
+                    </div>
+                    <div class="bit-legend">
+                        Ví dụ: nếu cả 3 nút đang là đen thì chuỗi gửi đi sẽ là `000`.
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Giám Sát Cảm Biến</div>
+                <div class="sensor-top">
+                    <div class="mini-stat">
+                        <div class="mini-stat-label">Siêu âm</div>
+                        <div class="mini-stat-value" id="distanceValue">0.0 cm</div>
+                        <div class="mini-bar"><div class="mini-bar-fill" id="distanceBar"></div></div>
+                    </div>
+                    <div class="mini-stat">
+                        <div class="mini-stat-label">IR</div>
+                        <div class="mini-stat-value" id="irValue">0</div>
+                        <div class="mini-bar"><div class="mini-bar-fill" id="irBar"></div></div>
+                    </div>
+                </div>
+                <div class="sensor-grid" id="sensorGrid"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Biểu Đồ Analog QTR8A</div>
+                <div class="sensor-grid" id="analogBarContainer" style="display: flex; height: 180px; align-items: flex-end; gap: 8px; padding: 10px; background: #f8f9fb; border-radius: 8px;">
+                    <!-- Analog bars will be here -->
+                </div>
+                <div class="hint">Biểu đồ thanh thể hiện giá trị analog 0-4095 của 8 mắt cảm biến.</div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Lịch Sử Vị Trí Line</div>
+                <div class="chart-wrap">
+                    <canvas id="sensorChart"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">Nhật Ký BLE</div>
+                <div class="log" id="logDisplay"></div>
+                <button class="btn btn-warning" id="clearLogBtn">Xóa log</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+        const UART_TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+        const SENSOR_ACTIVE_THRESHOLD = 400;
+        const SENSOR_HISTORY_SIZE = 40;
+
+        let bleDevice = null;
+        let gattServer = null;
+        let rxCharacteristic = null;
+        let txCharacteristic = null;
+        let isConnected = false;
+        let commandBuffer = '';
+        let sensorChart = null;
+        let currentBits = ['0', '0', '0'];
+
+        const connectBtn = document.getElementById('connectBtn');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const robotMode = document.getElementById('robotMode');
+        const robotState = document.getElementById('robotState');
+        const calibrationStatus = document.getElementById('calibrationStatus');
+        const distanceStatus = document.getElementById('distanceStatus');
+        const irStatus = document.getElementById('irStatus');
+        const bitStatus = document.getElementById('bitStatus');
+        const modeBanner = document.getElementById('modeBanner');
+        const logDisplay = document.getElementById('logDisplay');
+        const sensorGrid = document.getElementById('sensorGrid');
+        const bitPreview = document.getElementById('bitPreview');
+
+        function addLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            logDisplay.textContent += `[${timestamp}] ${message}\n`;
+            logDisplay.scrollTop = logDisplay.scrollHeight;
+        }
+
+        function clearLog() {
+            logDisplay.textContent = '';
+        }
+
+        function initSensorCards() {
+            for (let i = 0; i < 8; i++) {
+                // Digital cards
+                const card = document.createElement('div');
+                card.className = 'sensor-card';
+                card.id = `sensor-card-${i}`;
+                card.innerHTML = `
+                    <div class="sensor-name">S${i}</div>
+                    <div class="sensor-state" id="sensor-state-${i}">0</div>
+                `;
+                sensorGrid.appendChild(card);
+
+                // Analog bars
+                const barWrap = document.createElement('div');
+                barWrap.style.flex = "1";
+                barWrap.style.height = "100%";
+                barWrap.style.display = "flex";
+                barWrap.style.flexDirection = "column-reverse";
+                barWrap.style.alignItems = "center";
+                barWrap.style.gap = "5px";
+
+                const barFill = document.createElement('div');
+                barFill.id = `analog-bar-${i}`;
+                barFill.style.width = "100%";
+                barFill.style.height = "0%";
+                barFill.style.background = "linear-gradient(to top, #4caf50, #2196f3)";
+                barFill.style.borderRadius = "3px";
+                barFill.style.transition = "height 0.1s ease";
+
+                const label = document.createElement('div');
+                label.textContent = `S${i}`;
+                label.style.fontSize = "10px";
+                label.style.color = "#888";
+
+                barWrap.appendChild(label);
+                barWrap.appendChild(barFill);
+                document.getElementById('analogBarContainer').appendChild(barWrap);
+            }
+        }
+
+        function initChart() {
+            const canvas = document.getElementById('sensorChart');
+            if (!canvas) {
+                console.warn('Sensor chart canvas not found; skipping chart init.');
+                return;
+            }
+
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js failed to load; BLE controls will continue without the chart.');
+                addLog('Canh bao: khong tai duoc Chart.js, bo qua bieu do de van dung duoc Bluetooth.');
+                return;
+            }
+
+            const ctx = canvas.getContext('2d');
+            const labels = Array.from({ length: SENSOR_HISTORY_SIZE }, (_, i) => i + 1);
+            const colors = ['#f44336', '#ff9800', '#ffeb3b', '#8bc34a', '#00bcd4', '#2196f3', '#3f51b5', '#9c27b0'];
+
+            sensorChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: `Vị trí Line (0-7000)`,
+                        data: Array(SENSOR_HISTORY_SIZE).fill(3500),
+                        borderColor: '#2196f3',
+                        backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                        fill: true,
+                        borderWidth: 3,
+                        tension: 0.25,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#333333',
+                                boxWidth: 10
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                color: '#666666',
+                                maxTicksLimit: 6
+                            },
+                            grid: {
+                                color: '#ececec'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            max: 7000,
+                            ticks: {
+                                color: '#666666'
+                            },
+                            grid: {
+                                color: '#ececec'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateConnectionUI() {
+            connectionStatus.textContent = isConnected ? 'Đã kết nối' : 'Chưa kết nối';
+            connectionStatus.className = `status-value ${isConnected ? 'connected' : 'disconnected'}`;
+            connectBtn.textContent = isConnected ? 'Ngắt kết nối Bluetooth' : 'Kết nối Bluetooth';
+            document.getElementById('encoderConnectionHint').textContent = isConnected
+                ? 'BLE đã kết nối; đang chờ dữ liệu encoder.'
+                : 'Chờ kết nối BLE để nhận dữ liệu encoder.';
+        }
+
+        function setMode(mode) {
+            robotMode.textContent = mode;
+            modeBanner.textContent = mode;
+            modeBanner.classList.remove('auto', 'manual');
+            if (mode.includes('AUTO')) {
+                modeBanner.classList.add('auto');
+            } else if (mode.includes('MANUAL') || mode.includes('THỦ CÔNG')) {
+                modeBanner.classList.add('manual');
+            }
+        }
+
+        function setRunState(state) {
+            const normalized = String(state || 'STOPPED').toUpperCase();
+            robotState.textContent = normalized;
+            robotState.className = `status-value ${normalized === 'RUNNING' ? 'running' : 'stopped'}`;
+        }
+
+        function setCalibrationState(state) {
+            const normalized = String(state || 'PENDING').toUpperCase();
+            calibrationStatus.textContent = normalized;
+
+            let statusClass = 'pending';
+            if (normalized === 'READY') {
+                statusClass = 'running';
+            } else if (normalized === 'WHITE_DONE' || normalized === 'BLACK_DONE') {
+                statusClass = 'pending';
+            }
+
+            calibrationStatus.className = `status-value ${statusClass}`;
+        }
+
+        function updateBitButtons() {
+            document.querySelectorAll('.bit-toggle').forEach((button, index) => {
+                const isWhite = currentBits[index] === '1';
+                button.classList.toggle('btn-light', isWhite);
+                button.classList.toggle('btn-dark', !isWhite);
+                button.querySelector('.bit-state').textContent = isWhite ? 'TRẮNG' : 'ĐEN';
+            });
+
+            const code = currentBits.join('');
+            bitPreview.textContent = code;
+            bitStatus.textContent = code;
+        }
+
+        function toggleBit(index) {
+            currentBits[index] = currentBits[index] === '0' ? '1' : '0';
+            updateBitButtons();
+        }
+
+        async function writeText(text) {
+            if (!isConnected || !rxCharacteristic) {
+                addLog('Không thể gửi lệnh vì chưa kết nối BLE');
+                return false;
+            }
+
+            const payload = new TextEncoder().encode(text);
+            if (typeof rxCharacteristic.writeValueWithoutResponse === 'function') {
+                await rxCharacteristic.writeValueWithoutResponse(payload);
+            } else {
+                await rxCharacteristic.writeValue(payload);
+            }
+            return true;
+        }
+
+        async function sendCmd(buttonCode, state) {
+            try {
+                await writeText(`!B${buttonCode}${state}\n`);
+            } catch (error) {
+                addLog(`Lỗi gửi lệnh nút ${buttonCode}: ${error.message}`);
+            }
+        }
+
+        async function sendText(text) {
+            try {
+                const sent = await writeText(`${text}\n`);
+                if (sent) addLog(`Gửi: ${text}`);
+            } catch (error) {
+                addLog(`Lỗi gửi "${text}": ${error.message}`);
+            }
+        }
+
+        async function sendPIDUpdate() {
+            const kp = document.getElementById('kpInput').value;
+            const ki = document.getElementById('kiInput').value;
+            const kd = document.getElementById('kdInput').value;
+            const spd = document.getElementById('speedInput').value;
+            const turnSpd = document.getElementById('turnSpeedInput').value;
+            const sharpSpd = document.getElementById('sharpTurnSpeedInput').value;
+
+            await writeText(`!S1${kp}\n`);
+            await new Promise(r => setTimeout(r, 100));
+            await writeText(`!S2${ki}\n`);
+            await new Promise(r => setTimeout(r, 100));
+            await writeText(`!S3${kd}\n`);
+            await new Promise(r => setTimeout(r, 100));
+            await writeText(`!S4${spd}\n`);
+            await new Promise(r => setTimeout(r, 100));
+            await writeText(`!S5${turnSpd}\n`);
+            await new Promise(r => setTimeout(r, 100));
+            await writeText(`!S6${sharpSpd}\n`);
+            
+            addLog(`Đã gửi bộ tham số PID & Tốc độ mới`);
+        }
+
+        async function sendBitPattern() {
+            const pattern = currentBits.join('');
+            try {
+                const sent = await writeText(`${pattern}\n`);
+                if (sent) addLog(`Gửi bit trắng/đen: ${pattern}`);
+            } catch (error) {
+                addLog(`Lỗi gửi bit: ${error.message}`);
+            }
+        }
+
+        function bindMomentaryButtons() {
+            document.querySelectorAll('[data-momentary]').forEach((button) => {
+                const code = button.dataset.momentary;
+
+                const press = async (event) => {
+                    event.preventDefault();
+                    button.classList.add('is-active');
+                    await sendCmd(code, 1);
+                };
+
+                const release = async (event) => {
+                    event.preventDefault();
+                    button.classList.remove('is-active');
+                    await sendCmd(code, 0);
+                };
+
+                button.addEventListener('pointerdown', press);
+                button.addEventListener('pointerup', release);
+                button.addEventListener('pointerleave', (event) => {
+                    if (button.classList.contains('is-active')) {
+                        release(event);
+                    }
+                });
+                button.addEventListener('pointercancel', release);
+            });
+        }
+
+        function bindActionButtons() {
+            document.querySelectorAll('[data-text]').forEach((button) => {
+                button.addEventListener('click', () => sendText(button.dataset.text));
+            });
+
+            document.querySelectorAll('.bit-toggle').forEach((button) => {
+                button.addEventListener('click', () => toggleBit(Number(button.dataset.bitIndex)));
+            });
+
+            document.getElementById('pidBtn').addEventListener('click', sendPIDUpdate);
+            document.getElementById('sendBitsBtn').addEventListener('click', sendBitPattern);
+            document.getElementById('clearLogBtn').addEventListener('click', clearLog);
+        }
+
+        async function connectToRobot() {
+            try {
+                console.log("🔵 Starting BLE connection...");
+                console.log("📱 Navigator.bluetooth available:", !!navigator.bluetooth);
+                
+                addLog('Đang tìm thiết bị Bluetooth...');
+                bleDevice = await navigator.bluetooth.requestDevice({
+                    filters: [
+                        { name: 'ESP32_Robot' },
+                        { namePrefix: 'ESP32' }
+                    ],
+                    optionalServices: [UART_SERVICE_UUID]
+                });
+
+                console.log("✅ Device found:", bleDevice.name);
+                bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+
+                addLog('Đang kết nối tới ESP32...');
+                gattServer = await bleDevice.gatt.connect();
+                console.log("✅ GATT Server connected");
+
+                const service = await gattServer.getPrimaryService(UART_SERVICE_UUID);
+                console.log("✅ Service found");
+                
+                rxCharacteristic = await service.getCharacteristic(UART_RX_CHAR_UUID);
+                txCharacteristic = await service.getCharacteristic(UART_TX_CHAR_UUID);
+                console.log("✅ Characteristics found");
+
+                txCharacteristic.addEventListener('characteristicvaluechanged', handleNotifications);
+                await txCharacteristic.startNotifications();
+                console.log("✅ Notifications enabled");
+
+                isConnected = true;
+                updateConnectionUI();
+                addLog('Kết nối BLE thành công');
+                console.log("🎉 BLE Connection successful");
+                await sendText('SYNC');
+            } catch (error) {
+                console.error("❌ BLE Connection Error:", error.name, error.message);
+                addLog(`Kết nối thất bại: ${error.name} - ${error.message}`);
+                
+                // Check if it's a permission/browser support issue
+                if (error.name === 'NotFoundError' && error.message.includes('User cancelled')) {
+                    addLog('⚠️ Popup đã bị cancel hoặc trình duyệt không hỗ trợ');
+                } else if (error.name === 'NotSupportedError') {
+                    addLog('❌ Trình duyệt không hỗ trợ Web Bluetooth API');
+                    console.error("This browser doesn't support Web Bluetooth API");
+                } else if (error.name === 'NotAllowedError') {
+                    addLog('❌ Không có quyền truy cập Bluetooth');
+                }
+            }
+        }
+
+        async function disconnectFromRobot() {
+            console.log("🔴 Disconnecting from robot...");
+            if (bleDevice && bleDevice.gatt && bleDevice.gatt.connected) {
+                try {
+                    bleDevice.gatt.disconnect();
+                    console.log("✅ Disconnected");
+                } catch (e) {
+                    console.error("Error during disconnect:", e);
+                }
+            } else {
+                console.log("Device already disconnected or null");
+                onDisconnected();
+            }
+        }
+
+        function onDisconnected() {
+            console.log("📵 Device disconnected event");
+            isConnected = false;
+            rxCharacteristic = null;
+            txCharacteristic = null;
+            updateConnectionUI();
+            setRunState('STOPPED');
+            setMode('ĐANG CHỜ KẾT NỐI');
+            addLog('BLE đã ngắt kết nối');
+        }
+
+        function parsePidLine(line) {
+            const match = line.match(/Kp=([0-9.\-]+)\s+Ki=([0-9.\-]+)\s+Kd=([0-9.\-]+)\s+Spd=([0-9.\-]+)/);
+            if (!match) return false;
+
+            document.getElementById('kpInput').value = match[1];
+            document.getElementById('kiInput').value = match[2];
+            document.getElementById('kdInput').value = match[3];
+            document.getElementById('speedInput').value = match[4];
+            addLog(`Nhận PID hiện tại: ${line}`);
+            return true;
+        }
+
+        function handleNotifications(event) {
+            const data = new Uint8Array(event.target.value);
+            const text = new TextDecoder().decode(data);
+            const lines = text.split('\n');
+
+            lines.forEach((line) => {
+                line = line.trim();
+                if (!line) return;
+
+                if (line.startsWith('SENS:')) {
+                    // Start of multi-line sensor block
+                    return;
+                }
+
+                if (line.startsWith('A:')) {
+                    const values = line.substring(2).split(',').map(v => Number(v.trim()));
+                    values.forEach((v, i) => {
+                        const bar = document.getElementById(`analog-bar-${i}`);
+                        if (bar) bar.style.height = `${(v / 4095) * 100}%`;
+                    });
+                    return;
+                }
+
+                if (line.startsWith('D:')) {
+                    const values = line.substring(2).split(',').map(v => v.trim());
+                    values.forEach((v, i) => {
+                        const card = document.getElementById(`sensor-card-${i}`);
+                        const state = document.getElementById(`sensor-state-${i}`);
+                        if (card) card.classList.toggle('active', v === '1');
+                        if (state) state.textContent = v;
+                    });
+                    return;
+                }
+
+                if (line.startsWith('ERR:')) {
+                    document.getElementById('errorValue').textContent = line.substring(4);
+                    return;
+                }
+
+                if (line.startsWith('OUT:')) {
+                    document.getElementById('outputValue').textContent = line.substring(4);
+                    return;
+                }
+
+                if (line.startsWith('TURN:')) {
+                    document.getElementById('turnModeValue').textContent = line.substring(5);
+                    return;
+                }
+
+                if (line.startsWith('POS:')) {
+                    const pos = Number(line.substring(4));
+                    document.getElementById('positionValue').textContent = pos.toFixed(0);
+                    if (sensorChart) {
+                        const data = sensorChart.data.datasets[0].data;
+                        data.push(pos);
+                        if (data.length > SENSOR_HISTORY_SIZE) {
+                            data.shift();
+                        }
+                        sensorChart.update('none');
+                    }
+                    return;
+                }
+
+                if (line.startsWith('MODE:')) {
+                    const modeValue = line.substring(5).trim();
+                    const mode = modeValue === 'AUTO' ? 'CHẾ ĐỘ AUTO' : 'CHẾ ĐỘ THỦ CÔNG';
+                    setMode(mode);
+                    addLog(`Nhận mode: ${modeValue}`);
+                    return;
+                }
+
+                if (line.startsWith('STATE:')) {
+                    const state = line.substring(6).trim();
+                    setRunState(state);
+                    addLog(`Trạng thái robot: ${state}`);
+                    return;
+                }
+
+                if (line.startsWith('CAL:')) {
+                    const state = line.substring(4).trim();
+                    setCalibrationState(state);
+                    addLog(`Calib: ${state}`);
+                    return;
+                }
+
+                if (line.startsWith('MISSION:')) {
+                    addLog(`Mission đã chọn: ${line.substring(8).trim()}`);
+                    return;
+                }
+
+                if (line.startsWith('ACK:')) {
+                    addLog(`ACK: ${line.substring(4).trim()}`);
+                    return;
+                }
+
+                if (line.startsWith('SENSOR:')) {
+                    // Legacy format
+                    return;
+                }
+
+                if (line.startsWith('DIST:')) {
+                    const distance = Number(line.substring(5));
+                    updateDistanceDisplay(distance);
+                    return;
+                }
+
+                if (line.startsWith('IR:')) {
+                    const ir = Number(line.substring(3));
+                    updateIRDisplay(ir);
+                    return;
+                }
+
+                if (line.startsWith('BITS:')) {
+                    const bits = line.substring(5).trim();
+                    if (/^[01]{3}$/.test(bits)) {
+                        currentBits = bits.split('');
+                        updateBitButtons();
+                    }
+                    addLog(`ESP xác nhận bit: ${bits}`);
+                    return;
+                }
+
+                if (line.startsWith('LOG:')) {
+                    addLog(`ESP: ${line.substring(4)}`);
+                    return;
+                }
+
+                if (parsePidLine(line)) {
+                    return;
+                }
+
+                addLog(`RX: ${line}`);
+            });
+        }
+
+        function updateAnalogBars(startIndex, values) {
+            values.forEach((value, offset) => {
+                const sensorIndex = startIndex + offset;
+                const bar = document.getElementById(`analog-bar-${sensorIndex}`);
+                const numericValue = Number(value);
+                if (!bar || !Number.isFinite(numericValue)) return;
+                const percent = Math.max(0, Math.min(100, (numericValue / 4095) * 100));
+                bar.style.height = `${percent}%`;
+            });
+        }
+
+        function updateDigitalCards(values) {
+            values.forEach((value, index) => {
+                const card = document.getElementById(`sensor-card-${index}`);
+                const state = document.getElementById(`sensor-state-${index}`);
+                if (card) card.classList.toggle('active', value === '1');
+                if (state) state.textContent = value;
+            });
+        }
+
+        function processNotificationLine(rawLine) {
+            const line = rawLine.trim();
+            if (!line) return;
+
+            if (line.startsWith('ENC:')) {
+                const counts = line.substring(4).split(',').map((value) => value.trim());
+                if (counts.length !== 2 || !counts.every((value) => /^-?\d+$/.test(value))) {
+                    addLog(`Dữ liệu encoder không hợp lệ: ${line}`);
+                    return;
+                }
+
+                document.getElementById('leftEncoderCount').textContent = counts[0];
+                document.getElementById('rightEncoderCount').textContent = counts[1];
+                document.getElementById('encoderConnectionHint').textContent =
+                    'Đang nhận dữ liệu encoder qua BLE.';
+                return;
+            }
+
+            if (line === 'SENS:' || line.startsWith('SENSOR:')) {
+                return;
+            }
+
+            if (line.startsWith('A:')) {
+                updateAnalogBars(0, line.substring(2).split(',').map((v) => v.trim()));
+                return;
+            }
+
+            const analogChunkMatch = line.match(/^A(\d):(.+)$/);
+            if (analogChunkMatch) {
+                const startIndex = Number(analogChunkMatch[1]);
+                const values = analogChunkMatch[2].split(',').map((v) => v.trim());
+                updateAnalogBars(startIndex, values);
+                return;
+            }
+
+            if (line.startsWith('D:')) {
+                const payload = line.substring(2).trim();
+                const values = payload.includes(',') ? payload.split(',').map((v) => v.trim()) : payload.split('');
+                updateDigitalCards(values);
+                return;
+            }
+
+            if (line.startsWith('ERR:')) {
+                document.getElementById('errorValue').textContent = line.substring(4);
+                return;
+            }
+
+            if (line.startsWith('OUT:')) {
+                document.getElementById('outputValue').textContent = line.substring(4);
+                return;
+            }
+
+            if (line.startsWith('TURN:')) {
+                document.getElementById('turnModeValue').textContent = line.substring(5);
+                return;
+            }
+
+            if (line.startsWith('POS:')) {
+                const pos = Number(line.substring(4));
+                if (!Number.isFinite(pos)) return;
+                document.getElementById('positionValue').textContent = pos.toFixed(0);
+                if (sensorChart) {
+                    const data = sensorChart.data.datasets[0].data;
+                    data.push(pos);
+                    if (data.length > SENSOR_HISTORY_SIZE) {
+                        data.shift();
+                    }
+                    sensorChart.update('none');
+                }
+                return;
+            }
+
+            if (line.startsWith('MODE:')) {
+                const modeValue = line.substring(5).trim();
+                const mode = modeValue === 'AUTO' ? 'CHẾ ĐỘ AUTO' : 'CHẾ ĐỘ THỦ CÔNG';
+                setMode(mode);
+                addLog(`Nhận mode: ${modeValue}`);
+                return;
+            }
+
+            if (line.startsWith('STATE:')) {
+                const state = line.substring(6).trim();
+                setRunState(state);
+                addLog(`Trạng thái robot: ${state}`);
+                return;
+            }
+
+            if (line.startsWith('CAL:')) {
+                const state = line.substring(4).trim();
+                if (state === 'MOVE_DONE') {
+                    addLog('Calib di chuyển hoàn tất.');
+                }
+                setCalibrationState(state);
+                addLog(`Calib: ${state}`);
+                return;
+            }
+
+            if (line.startsWith('MISSION:')) {
+                addLog(`Mission đã chọn: ${line.substring(8).trim()}`);
+                return;
+            }
+
+            if (line.startsWith('ACK:')) {
+                addLog(`ACK: ${line.substring(4).trim()}`);
+                return;
+            }
+
+            if (line.startsWith('DIST:')) {
+                const distance = Number(line.substring(5));
+                updateDistanceDisplay(distance);
+                return;
+            }
+
+            if (line.startsWith('IR:')) {
+                const ir = Number(line.substring(3));
+                updateIRDisplay(ir);
+                return;
+            }
+
+            if (line.startsWith('BITS:')) {
+                const bits = line.substring(5).trim();
+                if (/^[01]{3}$/.test(bits)) {
+                    currentBits = bits.split('');
+                    updateBitButtons();
+                }
+                addLog(`ESP xác nhận bit: ${bits}`);
+                return;
+            }
+
+            if (line.startsWith('LOG:')) {
+                addLog(`ESP: ${line.substring(4)}`);
+                return;
+            }
+
+            if (parsePidLine(line)) {
+                return;
+            }
+
+            addLog(`RX: ${line}`);
+        }
+
+        function handleNotifications(event) {
+            const value = event.target.value;
+            const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+            const text = new TextDecoder().decode(bytes).replace(/\r/g, '');
+
+            commandBuffer += text;
+            const lines = commandBuffer.split('\n');
+            commandBuffer = lines.pop() || '';
+
+            if (commandBuffer.length > 512) {
+                commandBuffer = '';
+            }
+
+            lines.forEach(processNotificationLine);
+        }
+
+        function updateSensorDisplay(values) {
+            values.forEach((value, index) => {
+                const active = value > SENSOR_ACTIVE_THRESHOLD;
+                const card = document.getElementById(`sensor-card-${index}`);
+                const valueElement = document.getElementById(`sensor-value-${index}`);
+                const stateElement = document.getElementById(`sensor-state-${index}`);
+
+                card.classList.toggle('active', active);
+                valueElement.textContent = value;
+                stateElement.textContent = active ? '1' : '0';
+            });
+        }
+
+        function updateDistanceDisplay(distance) {
+            const safeDistance = Number.isFinite(distance) ? distance : 0;
+            document.getElementById('distanceValue').textContent = `${safeDistance.toFixed(1)} cm`;
+            distanceStatus.textContent = `${safeDistance.toFixed(1)} cm`;
+            document.getElementById('distanceBar').style.width = `${Math.max(0, Math.min(100, safeDistance))}%`;
+        }
+
+        function updateIRDisplay(ir) {
+            const detected = Number(ir) === 1;
+            document.getElementById('irValue').textContent = detected ? '1' : '0';
+            irStatus.textContent = detected ? 'Phát hiện' : 'Không';
+            document.getElementById('irBar').style.width = detected ? '100%' : '0%';
+        }
+
+        function bindCoreEvents() {
+            connectBtn.addEventListener('click', async () => {
+                console.log("🖱️  Connect button clicked, isConnected:", isConnected);
+                if (isConnected) {
+                    await disconnectFromRobot();
+                } else {
+                    await connectToRobot();
+                }
+            });
+
+            window.addEventListener('beforeunload', () => {
+                if (isConnected) {
+                    disconnectFromRobot();
+                }
+            });
+        }
+
+        function initializeDashboard() {
+            initSensorCards();
+            initChart();
+            bindMomentaryButtons();
+            bindActionButtons();
+            updateBitButtons();
+            setRunState('STOPPED');
+            setCalibrationState('PENDING');
+            setMode('ĐANG CHỜ KẾT NỐI');
+            addLog('Dashboard sẵn sàng');
+        }
+
+        function bootstrapApp() {
+            updateConnectionUI();
+            bindCoreEvents();
+
+            try {
+                initializeDashboard();
+            } catch (error) {
+                console.error('UI initialization error:', error);
+                addLog(`Canh bao: giao dien tai loi (${error.message}) nhung nut Bluetooth van san sang.`);
+            }
+        }
+
+        bootstrapApp();
+        
+        // System info logging
+        console.log("🌐 Page loaded successfully");
+        console.log("📱 Browser: ", navigator.userAgent.substring(0, 80));
+        console.log("🔵 Web Bluetooth supported:", !!navigator.bluetooth);
+        if (!navigator.bluetooth) {
+            addLog('⚠️ CẢNH BÁO: Trình duyệt không hỗ trợ Web Bluetooth');
+            addLog('📢 Vui lòng dùng: Chrome, Edge, Opera trên PC/Android');
+            console.warn("Web Bluetooth not supported. Use Chrome, Edge, or Opera.");
+        } else {
+            addLog('✅ Web Bluetooth API được hỗ trợ');
+        }
+        console.log("🎯 Ready for BLE connection!");
+    </script>
+</body>
+</html>
