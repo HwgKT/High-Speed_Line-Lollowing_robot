@@ -48,9 +48,13 @@ Firmware phát giá trị analog 12-bit (0–4095) và chuỗi bit phát hiện 
 | **Calib di chuyển** | Trong 6 giây, di chuyển dãy cảm biến qua cả nền trắng và vạch đen; firmware tự ghi nhận min/max làm mốc. |
 | **Đọc lại trạng thái** | Yêu cầu ESP32 gửi lại cảm biến, encoder và trạng thái calib. |
 | **Đặt xung về 0** | Xóa bộ đếm encoder trái/phải để bắt đầu phép đo mới. |
+| **Lưu vào ESP32** | Gửi P, I, D, tốc độ cơ bản và PWM tối đa vào RAM ESP32; các giá trị có hiệu lực ngay và mất khi tắt nguồn. |
+| **Chạy bám line / Dừng bám line** | Chạy bộ điều khiển PID với cấu hình hiện tại. Cần hiệu chuẩn cảm biến trước khi bắt đầu; nếu mất line, firmware dừng động cơ. |
 | **Xóa nhật ký** | Chỉ xóa nội dung nhật ký BLE đang hiển thị trên trang. |
 
 Khung cảm biến hiển thị **MẮT 01–16** theo thứ tự mux `S1`–`S16`. Giá trị analog dùng để kiểm tra tín hiệu; ô `LINE` được xác định từ bit cảm biến firmware gửi. Khung encoder hiển thị xung tích lũy riêng cho động cơ trái và phải.
+
+P/I/D mặc định lần lượt là `18`, `0` và `0.25`; tốc độ cơ bản mặc định là `150` và PWM tối đa là `255` (thang PWM 0–255). Tốc độ cơ bản là mức PWM chạy thẳng, còn PWM tối đa giới hạn đầu ra mỗi động cơ. Trang đọc lại cấu hình hiện tại từ ESP32 khi kết nối hoặc bấm **Đọc lại trạng thái**. Cấu hình chỉ được giữ trong RAM, không lưu qua lần khởi động lại.
 
 ## Cài đặt và nạp firmware
 
@@ -67,4 +71,4 @@ Lệnh BLE sử dụng Nordic UART Service (NUS):
 | RX | `6e400002-b5a3-f393-e0a9-e50e24dcca9e` | Web → ESP32 |
 | TX | `6e400003-b5a3-f393-e0a9-e50e24dcca9e` | ESP32 → Web |
 
-Các nút motor dùng lệnh nhấn/nhả `!B51`/`!B50` (tiến), `!B61`/`!B60` (lùi), `!B71`/`!B70` (trái), `!B81`/`!B80` (phải). Những lệnh chức năng khác: `STOP`, `CAL_WHITE`, `CAL_BLACK`, `CAL_MOVE`, `ENC_RESET`, `SYNC`. Telemetry gồm các gói analog `A<chỉ_số>:` (được chia nhỏ để tương thích giới hạn BLE), `D:`, `POS:`, `ERR:`, `ENC_L:`, `ENC_R:` và `CAL:`.
+Các nút motor dùng lệnh nhấn/nhả `!B51`/`!B50` (tiến), `!B61`/`!B60` (lùi), `!B71`/`!B70` (trái), `!B81`/`!B80` (phải). Những lệnh chức năng khác: `STOP`, `FOLLOW:1`/`FOLLOW:0`, `P:<giá_trị>`, `I:<giá_trị>`, `D:<giá_trị>`, `V:<tốc_độ>`, `W:<PWM_tối_đa>`, `CAL_WHITE`, `CAL_BLACK`, `CAL_MOVE`, `ENC_RESET`, `SYNC`. Telemetry gồm các gói analog `A<chỉ_số>:` (được chia nhỏ để tương thích giới hạn BLE), `D:`, `POS:`, `ERR:`, `ENC_L:`, `ENC_R:`, `CAL:`, trạng thái bám line `FOLLOW:` và cấu hình `P:`, `I:`, `D:`, `V:`, `W:`.

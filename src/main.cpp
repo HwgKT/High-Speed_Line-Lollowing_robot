@@ -2,6 +2,8 @@
 #include <NimBLEDevice.h>
 
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
 #include <string>
 
 namespace {
@@ -19,11 +21,16 @@ constexpr uint8_t kEncoderLeftA = 21;
 constexpr uint8_t kEncoderLeftB = 22;
 constexpr uint8_t kEncoderRightA = 32;
 constexpr uint8_t kEncoderRightB = 33;
-constexpr uint8_t kMotorSpeed = 150;
 constexpr uint32_t kTelemetryIntervalMs = 250;
 constexpr uint32_t kCalibrationSampleIntervalMs = 20;
 constexpr uint32_t kCalibrationDurationMs = 1000;
 constexpr uint32_t kMovingCalibrationDurationMs = 6000;
+constexpr uint32_t kPidIntervalMs = 10;
+constexpr float kDefaultKp = 18.0f;
+constexpr float kDefaultKi = 0.0f;
+constexpr float kDefaultKd = 0.25f;
+constexpr int kDefaultSpeed = 150;
+constexpr int kDefaultPwmLimit = 255;
 
 struct BleCommand {
     char text[64];
@@ -59,6 +66,15 @@ bool forwardHeld = false;
 bool backwardHeld = false;
 bool leftHeld = false;
 bool rightHeld = false;
+float pidKp = kDefaultKp;
+float pidKi = kDefaultKi;
+float pidKd = kDefaultKd;
+int baseSpeed = kDefaultSpeed;
+int pwmLimit = kDefaultPwmLimit;
+bool lineFollowing = false;
+float integralError = 0.0f;
+float previousError = 0.0f;
+uint32_t lastPidUpdateAt = 0;
 
 void IRAM_ATTR onLeftEncoderEdge() {
     portENTER_CRITICAL_ISR(&encoderMux);
@@ -95,9 +111,11 @@ void applyManualMotion() {
         - (leftHeld ? 1 : 0) + (rightHeld ? 1 : 0);
     const int right = (forwardHeld ? 1 : 0) - (backwardHeld ? 1 : 0)
         + (leftHeld ? 1 : 0) - (rightHeld ? 1 : 0);
-    setMotor(kMotorPins[0], kMotorPins[1], left * kMotorSpeed);
-    setMotor(kMotorPins[2], kMotorPins[3], right * kMotorSpeed);
+    setMotor(kMotorPins[0], kMotorPins[1], constrain(left * baseSpeed, -pwmLimit, pwmLimit));
+    setMotor(kMotorPins[2], kMotorPins[3], constrain(right * baseSpeed, -pwmLimit, pwmLimit));
 }
+
+void sendBleLine(const String& line);
 
 void clearManualMotion() {
     forwardHeld = false;
@@ -105,6 +123,21 @@ void clearManualMotion() {
     leftHeld = false;
     rightHeld = false;
     stopMotors();
+}
+
+void resetPid() {
+    integralError = 0.0f;
+    previousError = 0.0f;
+    lastPidUpdateAt = 0;
+}
+
+void sendPidSettings() {
+    sendBleLine("P:" + String(pidKp, 2));
+    sendBleLine("I:" + String(pidKi, 2));
+    sendBleLine("D:" + String(pidKd, 2));
+    sendBleLine("V:" + String(baseSpeed));
+    sendBleLine("W:" + String(pwmLimit));
+    sendBleLine(String("FOLLOW:") + (lineFollowing ? "1" : "0"));
 }
 
 void readSensors() {
@@ -127,6 +160,66 @@ bool sensorSeesLine(uint8_t index) {
         : sensorRaw[index] > midpoint;
 }
 
+bool calculateLinePosition(int32_t& position) {
+    int32_t weightedTotal = 0;
+    uint32_t signalTotal = 0;
+    for (uint8_t index = 0; index < kSensorCount; ++index) {
+        if (!hasCalibration) {
+            continue;
+        }
+        const int difference = static_cast<int>(whiteCalibration[index])
+            - static_cast<int>(blackCalibration[index]);
+        const int range = abs(difference);
+        const int response = range < 5 ? 0 : constrain(
+            difference > 0
+                ? (static_cast<int>(whiteCalibration[index]) - sensorRaw[index]) * 1000 / range
+                : (static_cast<int>(sensorRaw[index]) - whiteCalibration[index]) * 1000 / range,
+            0, 1000);
+        if (response > 50) {
+            weightedTotal += response * static_cast<int>(index) * 1000;
+            signalTotal += response;
+        }
+    }
+    if (signalTotal == 0) {
+        return false;
+    }
+    position = weightedTotal / static_cast<int32_t>(signalTotal);
+    return true;
+}
+
+void updateLineFollower() {
+    if (!lineFollowing || calibrationMode != CalibrationMode::None) {
+        return;
+    }
+    const uint32_t now = millis();
+    if (now - lastPidUpdateAt < kPidIntervalMs) {
+        return;
+    }
+    const float deltaTime = lastPidUpdateAt == 0
+        ? kPidIntervalMs / 1000.0f
+        : (now - lastPidUpdateAt) / 1000.0f;
+    lastPidUpdateAt = now;
+
+    int32_t position = 0;
+    if (!calculateLinePosition(position)) {
+        resetPid();
+        stopMotors();
+        return;
+    }
+
+    const float error = (position - 7500) / 1000.0f;
+    integralError = constrain(integralError + error * deltaTime, -100.0f, 100.0f);
+    const float derivative = (error - previousError) / deltaTime;
+    previousError = error;
+    const float correction = pidKp * error + pidKi * integralError + pidKd * derivative;
+    const int leftSpeed = constrain(
+        static_cast<int>(std::lround(baseSpeed + correction)), -pwmLimit, pwmLimit);
+    const int rightSpeed = constrain(
+        static_cast<int>(std::lround(baseSpeed - correction)), -pwmLimit, pwmLimit);
+    setMotor(kMotorPins[0], kMotorPins[1], leftSpeed);
+    setMotor(kMotorPins[2], kMotorPins[3], rightSpeed);
+}
+
 void sendBleLine(const String& line) {
     if (txCharacteristic != nullptr && bleConnected) {
         txCharacteristic->setValue((line + '\n').c_str());
@@ -137,32 +230,14 @@ void sendBleLine(const String& line) {
 
 void sendTelemetry() {
     String digitalLine = "D:";
-    int32_t weightedTotal = 0;
-    uint32_t signalTotal = 0;
 
     for (uint8_t index = 0; index < kSensorCount; ++index) {
         const bool onLine = sensorSeesLine(index);
         digitalLine += onLine ? '1' : '0';
-
-        if (hasCalibration) {
-            const int difference = static_cast<int>(whiteCalibration[index])
-                - static_cast<int>(blackCalibration[index]);
-            const int range = abs(difference);
-            const int response = range < 5 ? 0 : constrain(
-                difference > 0
-                    ? (static_cast<int>(whiteCalibration[index]) - sensorRaw[index]) * 1000 / range
-                    : (static_cast<int>(sensorRaw[index]) - whiteCalibration[index]) * 1000 / range,
-                0, 1000);
-            if (response > 50) {
-                weightedTotal += response * static_cast<int>(index) * 1000;
-                signalTotal += response;
-            }
-        }
     }
 
-    const int32_t position = signalTotal == 0
-        ? 7500
-        : weightedTotal / static_cast<int32_t>(signalTotal);
+    int32_t position = 7500;
+    calculateLinePosition(position);
 
     for (uint8_t start = 0; start < kSensorCount; start += 3) {
         String analogLine = "A" + String(start) + ':';
@@ -191,7 +266,10 @@ void sendTelemetry() {
 }
 
 void beginCalibration(CalibrationMode mode) {
+    lineFollowing = false;
+    resetPid();
     clearManualMotion();
+    sendBleLine("FOLLOW:0");
     calibrationMode = mode;
     calibrationStartedAt = millis();
     lastCalibrationSampleAt = 0;
@@ -280,6 +358,11 @@ void updateCalibration() {
 }
 
 void setMotorButton(char buttonCode, bool pressed) {
+    if (pressed && lineFollowing) {
+        lineFollowing = false;
+        resetPid();
+        sendBleLine("FOLLOW:0");
+    }
     switch (buttonCode) {
         case '5': forwardHeld = pressed; break;
         case '6': backwardHeld = pressed; break;
@@ -290,11 +373,64 @@ void setMotorButton(char buttonCode, bool pressed) {
     applyManualMotion();
 }
 
+bool parseFloatSetting(const String& command, float minimum, float maximum, float& value) {
+    const char* input = command.c_str() + 2;
+    char* end = nullptr;
+    const float parsed = strtof(input, &end);
+    if (end == input || *end != '\0' || !std::isfinite(parsed)
+        || parsed < minimum || parsed > maximum) {
+        return false;
+    }
+    value = parsed;
+    return true;
+}
+
 void handleCommand(const String& command) {
     if (command.startsWith("!B") && command.length() >= 4) {
         setMotorButton(command[2], command[3] == '1');
     } else if (command == "STOP") {
+        lineFollowing = false;
+        resetPid();
         clearManualMotion();
+        sendBleLine("FOLLOW:0");
+    } else if (command.startsWith("P:") || command.startsWith("I:")
+        || command.startsWith("D:")) {
+        float value = 0.0f;
+        const char key = command[0];
+        const float minimum = 0.0f;
+        const float maximum = key == 'I' ? 10.0f : 100.0f;
+        if (!parseFloatSetting(command, minimum, maximum, value)) {
+            sendBleLine("LOG:Gia tri PID khong hop le");
+            return;
+        }
+        if (key == 'P') pidKp = value;
+        else if (key == 'I') pidKi = value;
+        else pidKd = value;
+        sendBleLine("ACK:" + command);
+    } else if (command.startsWith("V:") || command.startsWith("W:")) {
+        const int value = command.substring(2).toInt();
+        if (command.length() <= 2 || value < 0 || value > 255
+            || String(value) != command.substring(2)) {
+            sendBleLine("LOG:Toc do hoac PWM phai tu 0 den 255");
+            return;
+        }
+        if (command[0] == 'V') baseSpeed = value;
+        else pwmLimit = value;
+        sendBleLine("ACK:" + command);
+    } else if (command == "FOLLOW:1") {
+        if (!hasCalibration) {
+            sendBleLine("LOG:Can calib cam bien truoc khi chay bam line");
+            return;
+        }
+        clearManualMotion();
+        resetPid();
+        lineFollowing = true;
+        sendBleLine("FOLLOW:1");
+    } else if (command == "FOLLOW:0") {
+        lineFollowing = false;
+        resetPid();
+        clearManualMotion();
+        sendBleLine("FOLLOW:0");
     } else if (command == "CAL_WHITE") {
         beginCalibration(CalibrationMode::White);
     } else if (command == "CAL_BLACK") {
@@ -310,6 +446,7 @@ void handleCommand(const String& command) {
     } else if (command == "SYNC") {
         readSensors();
         sendTelemetry();
+        sendPidSettings();
         sendBleLine("STATE:READY");
     } else {
         sendBleLine("LOG:Unknown command " + command);
@@ -407,6 +544,8 @@ void setup() {
 void loop() {
     if (disconnectPending) {
         disconnectPending = false;
+        lineFollowing = false;
+        resetPid();
         clearManualMotion();
     }
 
@@ -419,6 +558,7 @@ void loop() {
     if (calibrationMode == CalibrationMode::None) {
         readSensors();
     }
+    updateLineFollower();
 
     static uint32_t lastTelemetryAt = 0;
     const uint32_t now = millis();
