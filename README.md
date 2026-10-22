@@ -4,7 +4,7 @@ Firmware ESP32 và giao diện BLE để hiệu chuẩn, kiểm tra động cơ,
 
 ## Mở giao diện BLE
 
-**[Mở LineLab BLE trên GitHub Pages](https://hwgkt.github.io/High-Speed_Line-Lollowing_robot/)**
+**[Mở LineLab BLE trên GitHub Pages](https://phanyennhi1412-blip.github.io/Line-following-robot/)**
 
 Giao diện tĩnh nằm trong [`web/index.html`](web/index.html), được tự động xuất bản lên GitHub Pages bằng workflow khi có thay đổi trong `web/` hoặc workflow deploy trên nhánh `main`. Nếu trang chưa mở được sau lần đầu, vào **Settings → Pages**, chọn **GitHub Actions** ở mục *Build and deployment*, sau đó chờ workflow `Deploy BLE web to GitHub Pages` chạy thành công trong tab **Actions**.
 
