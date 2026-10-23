@@ -19,6 +19,7 @@ constexpr char kBleName[] = "ESP32_Robot";
 constexpr char kUartServiceUuid[] = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
 constexpr char kUartRxUuid[] = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 constexpr char kUartTxUuid[] = "6e400003-b5a3-f393-e0a9-e50e24dcca9e";
+constexpr uint32_t kSerialCommandTimeoutMs = 1500;
 
 struct BleCommand {
     char text[64];
@@ -28,6 +29,8 @@ QueueHandle_t commandQueue = nullptr;
 NimBLECharacteristic* txCharacteristic = nullptr;
 volatile bool bleConnected = false;
 volatile bool disconnectPending = false;
+uint32_t lastSerialCommandAt = 0;
+bool serialSessionActive = false;
 
 bool parseFloatSetting(const String& command, float minimum, float maximum, float& value) {
     const char* input = command.c_str() + 2;
@@ -115,6 +118,8 @@ void handleCommand(const String& command) {
         sendTelemetry();
         sendPidSettings();
         sendLine("STATE:READY");
+    } else if (command == "HEARTBEAT") {
+        return;
     } else {
         sendLine("LOG:Unknown command " + command);
     }
@@ -201,9 +206,49 @@ void processCommands() {
     while (commandQueue != nullptr && xQueueReceive(commandQueue, &command, 0) == pdTRUE) {
         handleCommand(String(command.text));
     }
+
+    static char serialCommand[sizeof(BleCommand::text)] = {};
+    static size_t serialLength = 0;
+    static bool discardSerialCommand = false;
+    while (Serial.available() > 0) {
+        const int incoming = Serial.read();
+        if (incoming < 0) {
+            break;
+        }
+        const char character = static_cast<char>(incoming);
+        if (character == '\n' || character == '\r') {
+            if (!discardSerialCommand && serialLength > 0) {
+                serialCommand[serialLength] = '\0';
+                lastSerialCommandAt = millis();
+                serialSessionActive = true;
+                handleCommand(String(serialCommand));
+            }
+            serialLength = 0;
+            discardSerialCommand = false;
+        } else if (!discardSerialCommand) {
+            if (serialLength < sizeof(serialCommand) - 1) {
+                serialCommand[serialLength++] = character;
+            } else {
+                serialLength = 0;
+                discardSerialCommand = true;
+                sendLine("LOG:Serial command too long");
+            }
+        }
+
+        if (serialSessionActive && millis() - lastSerialCommandAt >= kSerialCommandTimeoutMs) {
+            serialSessionActive = false;
+            PID::setFollowing(false);
+            PID::reset();
+            Button::clear();
+            sendLine("STATE:SERIAL_TIMEOUT");
+        }
+    }
 }
 
 void sendLine(const String& line) {
+    if (Serial.availableForWrite() >= static_cast<int>(line.length() + 2)) {
+        Serial.println(line);
+    }
     if (txCharacteristic != nullptr && bleConnected) {
         txCharacteristic->setValue((line + '\n').c_str());
         txCharacteristic->notify();

@@ -3,22 +3,22 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#101820">
+    <meta name="theme-color" content="#08131d">
     <title>HIGH-SPEED BLE | Line Following Robot</title>
     <style>
         :root {
             color-scheme: dark;
-            --page: #101820;
-            --panel: #192630;
-            --panel-raised: #22333e;
-            --border: #314651;
-            --text: #eff6f4;
-            --muted: #9fb2b9;
-            --accent: #b9f45a;
-            --accent-ink: #17210d;
-            --danger: #ff6b6b;
-            --blue: #68c8ff;
-            --sensor-idle: #273a44;
+            --page: #08131d;
+            --panel: #101f2b;
+            --panel-raised: #172b38;
+            --border: #29414d;
+            --text: #e5f2f2;
+            --muted: #8ea7af;
+            --accent: #41e6d0;
+            --accent-ink: #06201e;
+            --danger: #ff637d;
+            --blue: #71adff;
+            --sensor-idle: #132530;
         }
 
         * {
@@ -29,11 +29,84 @@
             margin: 0;
             min-width: 320px;
             background:
-                radial-gradient(ellipse at 12% 0%, rgba(185, 244, 90, 0.08), transparent 35rem),
+                radial-gradient(ellipse at 8% 0%, rgba(31, 202, 181, 0.13), transparent 34rem),
+                radial-gradient(ellipse at 92% 12%, rgba(74, 125, 235, 0.12), transparent 30rem),
+                linear-gradient(rgba(75, 128, 139, 0.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(75, 128, 139, 0.045) 1px, transparent 1px),
                 var(--page);
+            background-size: auto, auto, 32px 32px, 32px 32px, auto;
             color: var(--text);
             font-family: Inter, "Segoe UI", sans-serif;
             line-height: 1.5;
+        }
+
+        body::before {
+            position: fixed;
+            z-index: 0;
+            inset: 0;
+            background-image:
+                radial-gradient(circle, rgba(65, 230, 208, 0.3) 0 1.5px, transparent 2px),
+                linear-gradient(90deg, transparent 0 23px, rgba(65, 230, 208, 0.11) 23px 24px, transparent 24px 100%),
+                linear-gradient(0deg, transparent 0 23px, rgba(113, 173, 255, 0.09) 23px 24px, transparent 24px 100%);
+            background-position: 12px 12px, 12px 12px, 12px 12px;
+            background-size: 96px 80px;
+            content: "";
+            opacity: 0.42;
+            pointer-events: none;
+            mask-image: linear-gradient(90deg, #000 0%, transparent 30%, transparent 70%, #000 100%);
+        }
+
+        .circuit-decoration {
+            position: fixed;
+            z-index: 0;
+            inset: 0;
+            overflow: hidden;
+            opacity: 0.52;
+            pointer-events: none;
+        }
+
+        .circuit-decoration svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .circuit-trace {
+            fill: none;
+            stroke: #27bfe8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            stroke-width: 2;
+        }
+
+        .circuit-trace.secondary {
+            stroke: #41e6d0;
+            stroke-width: 1.5;
+        }
+
+        .circuit-via {
+            fill: #08131d;
+            stroke: #41e6d0;
+            stroke-width: 2;
+        }
+
+        .circuit-pad {
+            fill: #ffc857;
+            stroke: #ffe4a0;
+            stroke-width: 1;
+        }
+
+        .circuit-sweep {
+            fill: none;
+            stroke: #b9f4ff;
+            stroke-linecap: round;
+            stroke-width: 5;
+            opacity: 0.2;
+        }
+
+        .circuit-sweep.inner {
+            stroke: #27bfe8;
+            stroke-width: 2;
+            opacity: 0.55;
         }
 
         button {
@@ -42,7 +115,9 @@
         }
 
         .shell {
-            width: min(1180px, calc(100% - 32px));
+            position: relative;
+            z-index: 1;
+            width: min(1440px, calc(100% - 32px));
             margin: 0 auto;
             padding: 30px 0 48px;
         }
@@ -59,9 +134,23 @@
         }
 
         .topbar {
+            position: relative;
             justify-content: space-between;
             gap: 20px;
             margin-bottom: 26px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(65, 230, 208, 0.16);
+        }
+
+        .topbar::after {
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: min(220px, 35%);
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--blue), transparent);
+            content: "";
+            box-shadow: 0 0 12px rgba(65, 230, 208, 0.3);
         }
 
         .brand {
@@ -74,12 +163,19 @@
             display: grid;
             width: 44px;
             height: 44px;
+            flex: 0 0 auto;
             place-items: center;
-            border-radius: 14px;
-            background: var(--accent);
-            color: var(--accent-ink);
-            font-size: 23px;
-            font-weight: 900;
+            border-radius: 12px;
+            border: 1px solid rgba(65, 230, 208, 0.44);
+            background: linear-gradient(145deg, #173d45, #172b45);
+            box-shadow: 0 0 24px rgba(65, 230, 208, 0.13), inset 0 0 12px rgba(65, 230, 208, 0.08);
+        }
+
+        .brand-mark svg {
+            width: 31px;
+            height: 31px;
+            overflow: visible;
+            filter: drop-shadow(0 0 5px rgba(65, 230, 208, 0.42));
         }
 
         h1,
@@ -98,6 +194,7 @@
             font-size: 11px;
             font-weight: 800;
             letter-spacing: 0.15em;
+            font-family: "Cascadia Code", Consolas, monospace;
             text-transform: uppercase;
         }
 
@@ -124,8 +221,29 @@
         .connect-button {
             min-height: 46px;
             padding: 0 18px;
-            background: var(--accent);
-            color: var(--accent-ink);
+            border-color: rgba(65, 230, 208, 0.28);
+            background: linear-gradient(135deg, #167d78, #146d8c);
+            box-shadow: 0 0 18px rgba(65, 230, 208, 0.12);
+            color: #e6fffb;
+        }
+
+        .connect-button.serial {
+            border-color: rgba(113, 173, 255, 0.32);
+            background: linear-gradient(135deg, #20385f, #263354);
+            color: #c7ddff;
+        }
+
+        .connect-button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+            transform: none;
+        }
+
+        .connection-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 9px;
         }
 
         .connect-button.is-connected {
@@ -154,22 +272,49 @@
         .panel {
             border: 1px solid var(--border);
             border-radius: 18px;
-            background: rgba(25, 38, 48, 0.94);
-            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.13);
+            background: linear-gradient(145deg, rgba(17, 33, 45, 0.97), rgba(13, 27, 38, 0.97));
+            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22), inset 0 1px rgba(217, 250, 255, 0.035);
         }
 
         .status-card {
             min-height: 92px;
             padding: 15px 17px;
+            border-top: 2px solid var(--status-led, #41e6d0);
+        }
+
+        .status-card:nth-child(2) {
+            --status-led: #ffc857;
+        }
+
+        .status-card:nth-child(3) {
+            --status-led: #71adff;
+        }
+
+        .status-card:nth-child(4) {
+            --status-led: #b895ff;
         }
 
         .status-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             margin-bottom: 8px;
             color: var(--muted);
             font-size: 11px;
             font-weight: 800;
             letter-spacing: 0.12em;
+            font-family: "Cascadia Code", Consolas, monospace;
             text-transform: uppercase;
+        }
+
+        .status-label::before {
+            width: 7px;
+            height: 7px;
+            flex: 0 0 auto;
+            border-radius: 50%;
+            background: var(--status-led, var(--accent));
+            box-shadow: 0 0 9px var(--status-led, var(--accent));
+            content: "";
         }
 
         .status-value {
@@ -189,19 +334,73 @@
         }
 
         .status-value.pending {
-            color: #ffd166;
+            color: #ffc857;
         }
 
         .workspace {
             display: grid;
-            grid-template-columns: minmax(260px, 0.78fr) minmax(360px, 1.22fr);
-            gap: 16px;
+            grid-template-columns: minmax(310px, 0.72fr) minmax(0, 1.6fr);
+            grid-template-areas:
+                "motor sensor"
+                "motor log"
+                "settings settings"
+                "encoder encoder";
+            gap: 18px;
             align-items: stretch;
+        }
+
+        .workspace-side {
+            display: grid;
+            min-width: 0;
+            gap: 18px;
         }
 
         .panel {
             min-width: 0;
             padding: 21px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            position: absolute;
+            top: 0;
+            left: 22px;
+            width: 82px;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--blue), transparent);
+            content: "";
+            opacity: 0.8;
+        }
+
+        .panel::after {
+            position: absolute;
+            top: 15px;
+            right: 17px;
+            width: 7px;
+            height: 7px;
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            background: rgba(65, 230, 208, 0.18);
+            box-shadow: 0 0 9px rgba(65, 230, 208, 0.35);
+            content: "";
+            pointer-events: none;
+        }
+
+        .motor-panel {
+            grid-area: motor;
+        }
+
+        .sensor-panel {
+            grid-area: sensor;
+        }
+
+        .log-panel {
+            grid-area: log;
+        }
+
+        .settings-panel {
+            grid-area: settings;
         }
 
         .section-heading {
@@ -248,19 +447,20 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
-            border-color: var(--border);
-            background: var(--panel-raised);
+            border-color: #34515e;
+            background: linear-gradient(145deg, #203946, #152833);
+            box-shadow: inset 0 1px rgba(226, 252, 255, 0.06), 0 5px 12px rgba(0, 0, 0, 0.16);
             font-size: 22px;
         }
 
         .motor-button:hover,
         .motor-button.is-active {
             border-color: var(--accent);
-            background: #314651;
+            background: #1d3942;
         }
 
         .motor-button.is-active {
-            box-shadow: 0 0 0 2px rgba(185, 244, 90, 0.2);
+            box-shadow: 0 0 0 2px rgba(65, 230, 208, 0.2), 0 0 18px rgba(65, 230, 208, 0.12);
         }
 
         .motor-spacer {
@@ -270,9 +470,9 @@
         .stop-button {
             width: min(100%, 246px);
             min-height: 46px;
-            background: rgba(255, 107, 107, 0.14);
-            border-color: rgba(255, 107, 107, 0.4);
-            color: #ff9292;
+            background: rgba(255, 99, 125, 0.1);
+            border-color: rgba(255, 99, 125, 0.38);
+            color: #ff8295;
         }
 
         .motor-hint {
@@ -280,62 +480,6 @@
             text-align: center;
         }
 
-        .speed-control {
-            width: min(100%, 330px);
-            padding: 13px 15px;
-            border: 1px solid var(--border);
-            border-radius: 13px;
-            background: #121d24;
-        }
-
-        .speed-heading,
-        .speed-presets {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-
-        .speed-heading {
-            margin-bottom: 10px;
-            color: var(--muted);
-            font-size: 12px;
-            font-weight: 750;
-        }
-
-        .speed-value {
-            color: var(--accent);
-            font-variant-numeric: tabular-nums;
-        }
-
-        .speed-slider {
-            width: 100%;
-            accent-color: var(--accent);
-        }
-
-        .speed-presets {
-            margin-top: 9px;
-        }
-
-        .speed-preset {
-            flex: 1;
-            min-height: 32px;
-            border: 1px solid var(--border);
-            border-radius: 9px;
-            background: var(--panel-raised);
-            color: var(--text);
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: 750;
-        }
-
-        .speed-preset:hover:not(:disabled) {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .speed-slider:disabled,
-        .speed-preset:disabled,
         .command-input:disabled,
         .command-send:disabled {
             cursor: not-allowed;
@@ -349,18 +493,42 @@
             margin-top: 20px;
         }
 
+        .motor-calibration {
+            width: 100%;
+            margin-top: 17px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+
+        .motor-calibration h3 {
+            margin: 0 0 9px;
+            color: var(--muted);
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .motor-calibration .calibration-actions {
+            margin-top: 0;
+        }
+
         .action-button {
             min-height: 44px;
             padding: 8px 10px;
             border-color: var(--border);
-            background: var(--panel-raised);
+            background: linear-gradient(145deg, #1b303d, #142630);
             text-align: center;
         }
 
         .action-button.primary {
-            border-color: transparent;
-            background: var(--accent);
-            color: var(--accent-ink);
+            border-color: rgba(65, 230, 208, 0.3);
+            background: linear-gradient(135deg, #167d78, #17688a);
+            color: #e6fffb;
+        }
+
+        .action-button:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: #8ff9e7;
         }
 
         .calibration-note {
@@ -391,7 +559,7 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 10px;
-            background: #121d24;
+            background: #0b1923;
             color: var(--text);
             font: inherit;
             font-variant-numeric: tabular-nums;
@@ -417,9 +585,9 @@
         }
 
         .follow-button.is-active {
-            border-color: rgba(255, 107, 107, 0.4);
-            background: rgba(255, 107, 107, 0.14);
-            color: #ff9292;
+            border-color: rgba(255, 99, 125, 0.34);
+            background: rgba(255, 99, 125, 0.1);
+            color: var(--danger);
         }
 
         .follow-button:disabled,
@@ -432,12 +600,8 @@
             margin-top: 10px;
         }
 
-        .sensor-panel {
-            grid-column: 1 / -1;
-        }
-
         .encoder-panel {
-            grid-column: 1 / -1;
+            grid-area: encoder;
         }
 
         .encoder-summary {
@@ -451,7 +615,7 @@
             padding: 14px;
             border: 1px solid var(--border);
             border-radius: 12px;
-            background: var(--panel-raised);
+            background: linear-gradient(145deg, #1a303c, #172936);
         }
 
         .encoder-reading span {
@@ -465,6 +629,7 @@
             margin-top: 7px;
             font-size: 22px;
             font-variant-numeric: tabular-nums;
+            font-family: "Cascadia Code", Consolas, monospace;
         }
 
         .sensor-summary {
@@ -495,7 +660,7 @@
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: #687d86;
+            background: #506570;
             content: "";
         }
 
@@ -505,26 +670,27 @@
 
         .line-state.detected::before {
             background: var(--accent);
-            box-shadow: 0 0 10px rgba(185, 244, 90, 0.7);
+            box-shadow: 0 0 10px rgba(65, 230, 208, 0.65);
         }
 
         .sensor-scroll {
             overflow-x: auto;
             padding: 13px 0 7px;
-            scrollbar-color: #49616c var(--panel);
+            scrollbar-color: #397b83 var(--panel);
             scrollbar-width: thin;
         }
 
         .sensor-row {
             display: grid;
-            grid-template-columns: repeat(16, minmax(54px, 1fr));
-            gap: 7px;
-            min-width: 980px;
+            grid-template-columns: repeat(16, minmax(0, 1fr));
+            gap: 5px;
+            min-width: 0;
         }
 
         .sensor-cell {
             min-height: 119px;
-            padding: 10px 6px;
+            min-width: 0;
+            padding: 10px 3px;
             border: 1px solid var(--border);
             border-radius: 12px;
             background: var(--sensor-idle);
@@ -534,7 +700,7 @@
 
         .sensor-cell.active {
             border-color: var(--accent);
-            background: rgba(185, 244, 90, 0.13);
+            background: rgba(65, 230, 208, 0.1);
         }
 
         .sensor-cell.unknown {
@@ -547,6 +713,7 @@
             color: var(--muted);
             font-size: 10px;
             font-weight: 800;
+            font-family: "Cascadia Code", Consolas, monospace;
         }
 
         .sensor-reading {
@@ -555,6 +722,7 @@
             font-size: 15px;
             font-variant-numeric: tabular-nums;
             font-weight: 800;
+            font-family: "Cascadia Code", Consolas, monospace;
         }
 
         .sensor-rail {
@@ -564,14 +732,14 @@
             margin: 9px 2px 6px;
             overflow: hidden;
             border-radius: 5px;
-            background: #18252d;
+            background: #0b1b25;
         }
 
         .sensor-fill {
             width: 100%;
             height: 0;
             border-radius: 4px 4px 0 0;
-            background: linear-gradient(0deg, #69c8ff, var(--accent));
+            background: linear-gradient(0deg, #ffc857, #41e6d0);
             transition: height 100ms linear;
         }
 
@@ -581,10 +749,11 @@
             font-size: 9px;
             font-weight: 800;
             letter-spacing: 0.06em;
+            font-family: "Cascadia Code", Consolas, monospace;
         }
 
         .sensor-cell.active .sensor-state {
-            color: var(--accent);
+            color: var(--blue);
         }
 
         .sensor-legend {
@@ -592,11 +761,6 @@
             flex-wrap: wrap;
             gap: 12px;
             margin-top: 10px;
-        }
-
-        .log-panel {
-            grid-column: 2;
-            grid-row: 1;
         }
 
         .log-heading {
@@ -619,8 +783,8 @@
             padding: 12px;
             border: 1px solid var(--border);
             border-radius: 11px;
-            background: #121d24;
-            color: #c4d3d4;
+            background: #091720;
+            color: #b8d0d5;
             font: 12px/1.65 "Cascadia Code", Consolas, monospace;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
@@ -639,7 +803,7 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 9px;
-            background: #121d24;
+            background: #091720;
             color: var(--text);
             font: 12px "Cascadia Code", Consolas, monospace;
         }
@@ -656,6 +820,11 @@
             font-weight: 750;
         }
 
+        .command-send:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
         .command-hint {
             margin-top: 7px;
         }
@@ -663,11 +832,18 @@
         .notice {
             margin-top: 14px;
             padding: 11px 13px;
-            border: 1px solid rgba(104, 200, 255, 0.24);
+            border: 1px solid rgba(65, 230, 208, 0.22);
             border-radius: 12px;
-            background: rgba(104, 200, 255, 0.07);
-            color: #b6dced;
+            background: rgba(65, 230, 208, 0.07);
+            color: #9ce5dc;
             font-size: 12px;
+        }
+
+        @media (max-width: 1240px) {
+            .sensor-row {
+                grid-template-columns: repeat(16, minmax(48px, 1fr));
+                min-width: 850px;
+            }
         }
 
         @media (max-width: 760px) {
@@ -682,14 +858,12 @@
 
             .workspace {
                 grid-template-columns: 1fr;
-            }
-
-            .sensor-panel,
-            .settings-panel,
-            .encoder-panel,
-            .log-panel {
-                grid-column: auto;
-                grid-row: auto;
+                grid-template-areas:
+                    "motor"
+                    "sensor"
+                    "log"
+                    "settings"
+                    "encoder";
             }
 
             .panel {
@@ -704,10 +878,20 @@
         @media (max-width: 430px) {
             .topbar {
                 align-items: flex-start;
+                flex-direction: column;
             }
 
             .topbar .brand {
                 min-width: 0;
+            }
+
+            .connection-actions {
+                width: 100%;
+                justify-content: stretch;
+            }
+
+            .connection-actions .connect-button {
+                flex: 1;
             }
 
             .brand-mark {
@@ -747,21 +931,85 @@
     </style>
 </head>
 <body>
+    <div class="circuit-decoration" aria-hidden="true">
+        <svg viewBox="0 0 1000 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <g class="circuit-trace">
+                <path d="M-20 104h76a14 14 0 0 1 14 14v34h58a14 14 0 0 0 14-14v-12a14 14 0 0 1 14-14h66"/>
+                <path d="M-18 132h48a14 14 0 0 1 14 14v25a14 14 0 0 0 14 14h35"/>
+                <path d="M-20 220h112a14 14 0 0 0 14-14v-15a14 14 0 0 1 14-14h42v-28a14 14 0 0 1 14-14h57"/>
+                <path d="M42 -12v51a14 14 0 0 0 14 14h27a14 14 0 0 1 14 14v13"/>
+                <path d="M158 -16v43a14 14 0 0 1-14 14h-18a14 14 0 0 0-14 14v18"/>
+                <path d="M-10 326h63a14 14 0 0 0 14-14v-43a14 14 0 0 1 14-14h35"/>
+                <path d="M-12 358h96v31a14 14 0 0 0 14 14h38"/>
+                <path d="M990 88h-88a14 14 0 0 0-14 14v28h-68a14 14 0 0 1-14-14V95a14 14 0 0 0-14-14h-34"/>
+                <path d="M1010 166h-53a14 14 0 0 1-14-14v-10a14 14 0 0 0-14-14h-42"/>
+                <path d="M1016 286h-104a14 14 0 0 1-14-14v-34a14 14 0 0 0-14-14h-48"/>
+                <path d="M990 590h-76a14 14 0 0 1-14-14v-31a14 14 0 0 0-14-14h-37"/>
+                <path d="M1010 628h-48a14 14 0 0 0-14 14v37h-79"/>
+                <path d="M861 816v-58a14 14 0 0 1 14-14h32a14 14 0 0 0 14-14v-35"/>
+                <path d="M729 812v-34a14 14 0 0 0-14-14h-44a14 14 0 0 1-14-14v-22"/>
+            </g>
+            <g class="circuit-trace secondary">
+                <path d="M-12 176h24a10 10 0 0 1 10 10v23a10 10 0 0 0 10 10h32"/>
+                <path d="M-10 278h77a10 10 0 0 0 10-10v-22a10 10 0 0 1 10-10h18"/>
+                <path d="M218 -8v26a10 10 0 0 1-10 10h-22a10 10 0 0 0-10 10v16"/>
+                <path d="M1008 190h-28a10 10 0 0 0-10 10v31a10 10 0 0 1-10 10h-32"/>
+                <path d="M1005 548h-65a10 10 0 0 1-10-10v-18a10 10 0 0 0-10-10h-27"/>
+                <path d="M797 808v-23a10 10 0 0 1 10-10h19a10 10 0 0 0 10-10v-18"/>
+            </g>
+            <g>
+                <circle class="circuit-via" cx="212" cy="112" r="5"/>
+                <circle class="circuit-via" cx="133" cy="183" r="5"/>
+                <circle class="circuit-via" cx="253" cy="135" r="5"/>
+                <circle class="circuit-via" cx="117" cy="75" r="5"/>
+                <circle class="circuit-via" cx="810" cy="81" r="5"/>
+                <circle class="circuit-via" cx="914" cy="128" r="5"/>
+                <circle class="circuit-via" cx="836" cy="224" r="5"/>
+                <circle class="circuit-via" cx="865" cy="537" r="5"/>
+                <circle class="circuit-via" cx="802" cy="746" r="5"/>
+                <circle class="circuit-via" cx="676" cy="730" r="5"/>
+                <rect class="circuit-pad" x="34" y="205" width="8" height="8" rx="1"/>
+                <rect class="circuit-pad" x="65" y="51" width="8" height="8" rx="1"/>
+                <rect class="circuit-pad" x="927" y="96" width="8" height="8" rx="1"/>
+                <rect class="circuit-pad" x="913" y="655" width="8" height="8" rx="1"/>
+                <rect class="circuit-pad" x="654" y="722" width="8" height="8" rx="1"/>
+            </g>
+            <g class="circuit-trace secondary">
+                <path d="M727 -52C895 22 841 137 1014 210"/>
+                <path d="M754 -52C922 22 868 137 1041 210"/>
+                <path d="M779 -52C947 22 893 137 1066 210"/>
+            </g>
+            <path class="circuit-sweep" d="M82-74C274 72 203 191 410 304"/>
+            <path class="circuit-sweep inner" d="M101-78C293 68 222 187 429 300"/>
+            <path class="circuit-sweep" d="M-95 635C90 508 195 632 354 798"/>
+            <path class="circuit-sweep inner" d="M-112 610C73 483 178 607 337 773"/>
+        </svg>
+    </div>
     <main class="shell">
         <header class="topbar">
             <div class="brand">
-                <div class="brand-mark" aria-hidden="true">A</div>
+                <div class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M13 3v6m7-6v6m7-6v6m7-6v6M13 31v6m7-6v6m7-6v6m7-6v6M3 13h6m-6 7h6m-6 7h6m-6-14v14M31 13h6m-6 7h6m-6 7h6m-6-14v14" stroke="#41e6d0" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="10" y="10" width="20" height="20" rx="4" fill="#173d45" stroke="#8ff9e7" stroke-width="1.5"/>
+                        <path d="M15 16h10M15 20h10M15 24h6" stroke="#71adff" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="25" cy="24" r="1.5" fill="#ffc857"/>
+                    </svg>
+                </div>
                 <div>
-                    <p class="eyebrow">16-sensor high-speed line follower</p>
+                    <p class="eyebrow">KŌBŌ ELECTRONICS LAB · 日本</p>
                     <h1>HIGH-SPEED BLE</h1>
                 </div>
             </div>
-            <button class="connect-button" id="connectButton" type="button">Kết nối ESP32</button>
+            <div class="connection-actions" aria-label="Chọn kết nối với ESP32">
+                <button class="connect-button" id="connectButton" type="button">Kết nối BLE</button>
+                <button class="connect-button serial" id="serialConnectButton" type="button">Kết nối cáp USB</button>
+            </div>
         </header>
 
         <section class="status-grid" aria-label="Trạng thái robot">
             <article class="status-card">
-                <p class="status-label">Bluetooth</p>
+                <p class="status-label">Kết nối</p>
                 <p class="status-value offline" id="connectionStatus">Chưa kết nối</p>
             </article>
             <article class="status-card">
@@ -779,9 +1027,9 @@
         </section>
 
         <div class="workspace">
-            <section class="panel" aria-labelledby="motorHeading">
+            <section class="panel motor-panel" aria-labelledby="motorHeading">
                 <div class="section-heading">
-                    <h2 id="motorHeading">Test động cơ</h2>
+                    <h2 id="motorHeading">🎮 Test động cơ</h2>
                 </div>
                 <p class="section-copy">Nhấn giữ để chạy; thả nút để ngắt hướng đang test.</p>
                 <div class="motor-layout">
@@ -798,43 +1046,31 @@
                         <button class="motor-button" type="button" data-motor="6" aria-label="Lùi" title="Lùi">▼</button>
                         <span class="motor-spacer" aria-hidden="true"></span>
                     </div>
-                    <button class="stop-button" id="stopButton" type="button">DỪNG ĐỘNG CƠ</button>
+                    <button class="stop-button" id="stopButton" type="button">🛑 DỪNG ĐỘNG CƠ</button>
                     <p class="hint motor-hint">Thử xe trên giá kê hoặc khu vực trống. Nút dừng gửi lệnh STOP trực tiếp tới ESP32.</p>
                     <p class="hint keyboard-hint">Bàn phím: <strong>W A S D</strong> hoặc phím mũi tên để lái, <strong>Space / Esc</strong> để dừng.</p>
                 </div>
-
-                <div class="speed-control" aria-label="Điều chỉnh tốc độ cơ bản">
-                    <div class="speed-heading">
-                        <label for="speedSlider">Tốc độ cơ bản</label>
-                        <span class="speed-value" id="speedDisplay">150 / 255</span>
+                <div class="motor-calibration">
+                    <h3>🛠 Calib cảm biến</h3>
+                    <div class="calibration-actions" aria-label="Hiệu chuẩn cảm biến">
+                        <button class="action-button" type="button" data-command="CAL_WHITE">☀️ Calib nền trắng</button>
+                        <button class="action-button" type="button" data-command="CAL_BLACK">⚫ Calib vạch đen</button>
+                        <button class="action-button primary" type="button" data-command="CAL_MOVE">🔄 Calib di chuyển</button>
+                        <button class="action-button" type="button" data-command="SYNC">📡 Đọc trạng thái</button>
                     </div>
-                    <input class="speed-slider" id="speedSlider" type="range" min="0" max="255" step="1" value="150" aria-label="Tốc độ cơ bản PWM">
-                    <div class="speed-presets" aria-label="Mức tốc độ cài sẵn">
-                        <button class="speed-preset" type="button" data-speed-preset="100">100 · Thấp</button>
-                        <button class="speed-preset" type="button" data-speed-preset="150">150 · Vừa</button>
-                        <button class="speed-preset" type="button" data-speed-preset="200">200 · Cao</button>
-                        <button class="speed-preset" type="button" data-speed-preset="255">255 · Tối đa</button>
-                    </div>
+                    <p class="hint calibration-note">Calib trắng/đen riêng hoặc di chuyển cảm biến qua hai mặt trong 6 giây.</p>
                 </div>
-
-                <div class="calibration-actions" aria-label="Hiệu chuẩn cảm biến">
-                    <button class="action-button" type="button" data-command="CAL_WHITE">Calib nền trắng</button>
-                    <button class="action-button" type="button" data-command="CAL_BLACK">Calib vạch đen</button>
-                    <button class="action-button primary" type="button" data-command="CAL_MOVE">Calib di chuyển</button>
-                    <button class="action-button" type="button" data-command="SYNC">Đọc lại trạng thái</button>
-                </div>
-                <p class="hint calibration-note">Đặt cảm biến trên nền trắng rồi calib, sau đó đặt lên vạch đen và calib lần nữa.</p>
             </section>
 
             <section class="panel log-panel" aria-labelledby="logHeading">
                 <div class="log-heading">
-                    <h2 id="logHeading">Nhật ký BLE</h2>
+                    <h2 id="logHeading">📜 Nhật ký kết nối</h2>
                     <button class="clear-button" id="clearLogButton" type="button">Xóa nhật ký</button>
                 </div>
                 <div class="log" id="log" role="log" aria-live="polite"></div>
                 <form class="command-row" id="commandForm">
                     <input class="command-input" id="commandInput" type="text" maxlength="63" autocomplete="off"
-                        placeholder="Lệnh BLE, ví dụ: SYNC hoặc ENC_RESET" aria-label="Lệnh BLE tùy chỉnh">
+                        placeholder="Lệnh robot, ví dụ: SYNC hoặc ENC_RESET" aria-label="Lệnh tùy chỉnh">
                     <button class="command-send" id="commandSendButton" type="submit">Gửi</button>
                 </form>
                 <p class="hint command-hint">Lệnh được gửi nguyên văn tới ESP32; lệnh không hỗ trợ sẽ được firmware ghi vào nhật ký.</p>
@@ -842,7 +1078,7 @@
 
             <section class="panel settings-panel" aria-labelledby="settingsHeading">
                 <div class="section-heading">
-                    <h2 id="settingsHeading">Thông số bám line</h2>
+                    <h2 id="settingsHeading">⚙️ Thông số bám line</h2>
                 </div>
                 <p class="section-copy">Thông số được giữ trong RAM ESP32 đến khi tắt nguồn; cần hiệu chuẩn cảm biến trước khi chạy.</p>
                 <div class="tuning-fields">
@@ -876,7 +1112,7 @@
 
             <section class="panel sensor-panel" aria-labelledby="sensorHeading">
                 <div class="section-heading">
-                    <h2 id="sensorHeading">Dãy cảm biến line · 16 mắt</h2>
+                    <h2 id="sensorHeading">🧭 Dãy cảm biến line · 16 mắt</h2>
                     <span class="line-state" id="lineState">Chưa có line</span>
                 </div>
                 <div class="sensor-summary">
@@ -898,7 +1134,7 @@
 
             <section class="panel encoder-panel" aria-labelledby="encoderHeading">
                 <div class="section-heading">
-                    <h2 id="encoderHeading">Encoder GA25-370</h2>
+                    <h2 id="encoderHeading">🛞 Encoder GA25-370</h2>
                     <button class="action-button" type="button" data-command="ENC_RESET">Đặt xung về 0</button>
                 </div>
                 <p class="section-copy">Số xung quadrature tích lũy của hai động cơ; bấm đặt lại trước mỗi lần đo.</p>
@@ -928,6 +1164,7 @@
 
             const elements = {
                 connect: document.getElementById('connectButton'),
+                serialConnect: document.getElementById('serialConnectButton'),
                 connection: document.getElementById('connectionStatus'),
                 calibration: document.getElementById('calibrationStatus'),
                 position: document.getElementById('positionValue'),
@@ -946,8 +1183,6 @@
                 pidD: document.getElementById('pidD'),
                 baseSpeed: document.getElementById('baseSpeed'),
                 pwmLimit: document.getElementById('pwmLimit'),
-                speedSlider: document.getElementById('speedSlider'),
-                speedDisplay: document.getElementById('speedDisplay'),
                 commandInput: document.getElementById('commandInput'),
                 commandSend: document.getElementById('commandSendButton'),
                 commandForm: document.getElementById('commandForm'),
@@ -961,11 +1196,17 @@
             const decoder = new TextDecoder();
             let device = null;
             let rxCharacteristic = null;
+            let serialPort = null;
+            let serialReader = null;
+            let serialWriter = null;
+            let serialReadTask = null;
             let isConnected = false;
             let isFollowing = false;
+            let connectionType = null;
+            let serialDisconnecting = false;
+            let serialHeartbeatTimer = null;
             let receiveBuffer = '';
             let writeQueue = Promise.resolve();
-            let speedDebounce = null;
 
             function isMotorCodeHeld(code) {
                 return [...heldButtons.values(), ...keyboardButtons.values()].includes(code);
@@ -974,21 +1215,6 @@
             function updateMotorButtonStyle(code) {
                 const button = document.querySelector(`[data-motor="${code}"]`);
                 if (button) button.classList.toggle('is-active', isMotorCodeHeld(code));
-            }
-
-            function updateSpeedControl(value, send) {
-                const numericValue = Number(value);
-                if (!Number.isFinite(numericValue)) return;
-                const speed = Math.max(0, Math.min(255, Math.round(numericValue)));
-                elements.baseSpeed.value = String(speed);
-                elements.speedSlider.value = String(speed);
-                elements.speedDisplay.textContent = `${speed} / 255`;
-                if (send) {
-                    clearTimeout(speedDebounce);
-                    speedDebounce = setTimeout(() => {
-                        void sendCommand(`V:${speed}`);
-                    }, 180);
-                }
             }
 
             function addLog(message) {
@@ -1129,27 +1355,33 @@
                 elements.follow.setAttribute('aria-pressed', String(following));
             }
 
-            function updateConnectionState(connected) {
+            function updateConnectionState(connected, type = connectionType) {
                 isConnected = connected;
-                elements.connection.textContent = connected ? 'Đã kết nối' : 'Chưa kết nối';
+                connectionType = connected ? type : null;
+                const transportLabel = type === 'serial' ? 'USB Serial' : 'BLE';
+                elements.connection.textContent = connected
+                    ? `Đã kết nối ${transportLabel}`
+                    : 'Chưa kết nối';
                 elements.connection.className = `status-value ${connected ? 'online' : 'offline'}`;
-                elements.connect.textContent = connected ? 'Ngắt kết nối' : 'Kết nối ESP32';
-                elements.connect.classList.toggle('is-connected', connected);
+                elements.connect.textContent = connected && type === 'ble' ? 'Ngắt BLE' : 'Kết nối BLE';
+                elements.serialConnect.textContent = connected && type === 'serial'
+                    ? 'Ngắt cáp USB'
+                    : 'Kết nối cáp USB';
+                elements.connect.classList.toggle('is-connected', connected && type === 'ble');
+                elements.serialConnect.classList.toggle('is-connected', connected && type === 'serial');
+                elements.connect.disabled = connected && type !== 'ble';
+                elements.serialConnect.disabled = connected && type !== 'serial';
                 document.querySelectorAll('[data-motor], [data-command]').forEach((button) => {
                     button.disabled = !connected;
                 });
-                document.querySelectorAll('[data-speed-preset]').forEach((button) => {
-                    button.disabled = !connected;
-                });
-                elements.speedSlider.disabled = !connected;
                 elements.commandInput.disabled = !connected;
                 elements.commandSend.disabled = !connected;
                 elements.stop.disabled = !connected;
                 elements.saveSettings.disabled = !connected;
                 elements.follow.disabled = !connected;
                 if (!connected) {
-                    clearTimeout(speedDebounce);
-                    speedDebounce = null;
+                    clearInterval(serialHeartbeatTimer);
+                    serialHeartbeatTimer = null;
                     clearHeldButtonStyles();
                     updateFollowState(false);
                     rxCharacteristic = null;
@@ -1163,16 +1395,21 @@
             }
 
             async function writeText(text) {
-                if (!isConnected || !rxCharacteristic) {
-                    throw new Error('Chưa kết nối BLE');
+                if (!isConnected) {
+                    throw new Error('Chưa kết nối ESP32');
                 }
 
                 const payload = new TextEncoder().encode(`${text}\n`);
                 const write = async () => {
-                    if (typeof rxCharacteristic.writeValueWithoutResponse === 'function') {
+                    if (connectionType === 'serial' && serialWriter) {
+                        await serialWriter.write(payload);
+                    } else if (connectionType === 'ble' && rxCharacteristic
+                        && typeof rxCharacteristic.writeValueWithoutResponse === 'function') {
                         await rxCharacteristic.writeValueWithoutResponse(payload);
-                    } else {
+                    } else if (connectionType === 'ble' && rxCharacteristic) {
                         await rxCharacteristic.writeValue(payload);
+                    } else {
+                        throw new Error('Chưa kết nối ESP32');
                     }
                 };
 
@@ -1199,6 +1436,7 @@
                 }
 
                 elements.connect.disabled = true;
+                elements.serialConnect.disabled = true;
                 try {
                     device = await navigator.bluetooth.requestDevice({
                         filters: [{ name: 'ESP32_Robot' }, { namePrefix: 'ESP32' }],
@@ -1213,7 +1451,7 @@
                     txCharacteristic.addEventListener('characteristicvaluechanged', handleNotification);
                     await txCharacteristic.startNotifications();
 
-                    updateConnectionState(true);
+                    updateConnectionState(true, 'ble');
                     addLog(`Đã kết nối ${device.name || 'ESP32'}`);
                     await sendCommand('SYNC', false);
                 } catch (error) {
@@ -1221,12 +1459,19 @@
                     if (device?.gatt?.connected) device.gatt.disconnect();
                     updateConnectionState(false);
                 } finally {
-                    elements.connect.disabled = false;
+                    if (!isConnected) {
+                        elements.connect.disabled = false;
+                        elements.serialConnect.disabled = false;
+                    }
                 }
             }
 
             async function disconnect() {
-                await releaseAllMotorButtons();
+                if (connectionType === 'serial') {
+                    await disconnectSerial();
+                    return;
+                }
+                await releaseAllControls();
                 if (isConnected) await sendCommand('STOP', false);
                 if (device?.gatt?.connected) device.gatt.disconnect();
                 else updateConnectionState(false);
@@ -1236,6 +1481,113 @@
                 updateConnectionState(false);
                 clearHeldButtonStyles();
                 addLog('Mất kết nối BLE.');
+            }
+
+            async function connectSerial() {
+                if (!('serial' in navigator)) {
+                    addLog('Trình duyệt không hỗ trợ Web Serial. Hãy dùng Chrome hoặc Edge trên HTTPS.');
+                    return;
+                }
+
+                elements.connect.disabled = true;
+                elements.serialConnect.disabled = true;
+                try {
+                    serialDisconnecting = false;
+                    serialPort = await navigator.serial.requestPort();
+                    await serialPort.open({ baudRate: 115200 });
+                    serialWriter = serialPort.writable.getWriter();
+                    updateConnectionState(true, 'serial');
+                    addLog('Đã mở cổng USB Serial ở 115200 baud.');
+                    serialReadTask = readSerialLoop(serialPort);
+                    await sendCommand('SYNC', false);
+                    serialHeartbeatTimer = setInterval(() => {
+                        if (isConnected && connectionType === 'serial') {
+                            void sendCommand('HEARTBEAT', false);
+                        }
+                    }, 500);
+                } catch (error) {
+                    addLog(`Kết nối USB Serial thất bại: ${error.message}`);
+                    await closeSerialPort();
+                    updateConnectionState(false);
+                } finally {
+                    if (!isConnected) {
+                        elements.connect.disabled = false;
+                        elements.serialConnect.disabled = false;
+                    }
+                }
+            }
+
+            async function readSerialLoop(port) {
+                const decoderStream = new TextDecoderStream();
+                const readableClosed = port.readable.pipeTo(decoderStream.writable);
+                const reader = decoderStream.readable.getReader();
+                serialReader = reader;
+                try {
+                    while (isConnected && connectionType === 'serial') {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        receiveBuffer += value.replace(/\r/g, '');
+                        const lines = receiveBuffer.split('\n');
+                        receiveBuffer = lines.pop() || '';
+                        if (receiveBuffer.length > 2048) {
+                            receiveBuffer = '';
+                            addLog('Bỏ gói Serial lỗi: dòng nhận vượt giới hạn.');
+                        }
+                        lines.forEach(processLine);
+                    }
+                } catch (error) {
+                    if (!serialDisconnecting) {
+                        addLog(`Mất kết nối USB Serial: ${error.message}`);
+                    }
+                } finally {
+                    reader.releaseLock();
+                    if (serialReader === reader) serialReader = null;
+                    try {
+                        await readableClosed;
+                    } catch (error) {
+                        if (!serialDisconnecting) {
+                            addLog(`Đóng luồng USB Serial: ${error.message}`);
+                        }
+                    }
+                    if (!serialDisconnecting && connectionType === 'serial') {
+                        updateConnectionState(false);
+                        await closeSerialPort();
+                    }
+                }
+            }
+
+            async function closeSerialPort() {
+                if (serialWriter) {
+                    serialWriter.releaseLock();
+                    serialWriter = null;
+                }
+                if (serialPort?.readable || serialPort?.writable) {
+                    try {
+                        await serialPort.close();
+                    } catch (error) {
+                        addLog(`Không đóng được cổng USB Serial: ${error.message}`);
+                    }
+                }
+                serialPort = null;
+                serialReadTask = null;
+            }
+
+            async function disconnectSerial() {
+                serialDisconnecting = true;
+                await releaseAllControls();
+                if (isConnected) await sendCommand('STOP', false);
+                updateConnectionState(false);
+                if (serialReader) {
+                    try {
+                        await serialReader.cancel();
+                    } catch (error) {
+                        addLog(`Không dừng được luồng USB Serial: ${error.message}`);
+                    }
+                }
+                if (serialReadTask) await serialReadTask;
+                await closeSerialPort();
+                serialDisconnecting = false;
+                addLog('Đã ngắt cáp USB Serial.');
             }
 
             function processLine(rawLine) {
@@ -1251,11 +1603,7 @@
                         V: elements.baseSpeed,
                         W: elements.pwmLimit
                     };
-                    if (settingMatch[1] === 'V') {
-                        updateSpeedControl(settingMatch[2], false);
-                    } else {
-                        settingFields[settingMatch[1]].value = settingMatch[2];
-                    }
+                    settingFields[settingMatch[1]].value = settingMatch[2];
                     return;
                 }
 
@@ -1496,8 +1844,6 @@
                     elements.pwmLimit
                 ];
                 if (fields.some((field) => !field.reportValidity())) return;
-                clearTimeout(speedDebounce);
-                speedDebounce = null;
                 const settings = [
                     `P:${Number(elements.pidP.value)}`,
                     `I:${Number(elements.pidI.value)}`,
@@ -1515,27 +1861,18 @@
             });
 
             elements.connect.addEventListener('click', () => {
-                if (isConnected) void disconnect();
-                else void connect();
+                if (isConnected && connectionType === 'ble') void disconnect();
+                else if (!isConnected) void connect();
+            });
+
+            elements.serialConnect.addEventListener('click', () => {
+                if (isConnected && connectionType === 'serial') void disconnectSerial();
+                else if (!isConnected) void connectSerial();
             });
 
             elements.stop.addEventListener('click', async () => {
                 await releaseAllControls();
                 await sendCommand('STOP');
-            });
-
-            elements.speedSlider.addEventListener('input', () => {
-                updateSpeedControl(elements.speedSlider.value, true);
-            });
-
-            elements.baseSpeed.addEventListener('input', () => {
-                updateSpeedControl(elements.baseSpeed.value, false);
-            });
-
-            document.querySelectorAll('[data-speed-preset]').forEach((button) => {
-                button.addEventListener('click', () => {
-                    updateSpeedControl(button.dataset.speedPreset, true);
-                });
             });
 
             elements.commandForm.addEventListener('submit', (event) => {
@@ -1562,10 +1899,12 @@
             renderSensorCells();
             bindMotorButtons();
             updateConnectionState(false);
-            updateSpeedControl(elements.baseSpeed.value, false);
             addLog('HIGH-SPEED BLE sẵn sàng. Kết nối ESP32 để bắt đầu.');
             if (!navigator.bluetooth) {
                 addLog('Web Bluetooth chưa được hỗ trợ trong trình duyệt hiện tại.');
+            }
+            if (!('serial' in navigator)) {
+                addLog('Web Serial chưa được hỗ trợ; cần Chrome hoặc Edge trên HTTPS.');
             }
         })();
     </script>
