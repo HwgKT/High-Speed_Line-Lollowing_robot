@@ -3,22 +3,22 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#08131d">
+    <meta name="theme-color" content="#ffffff">
     <title>HIGH-SPEED BLE | Line Following Robot</title>
     <style>
         :root {
-            color-scheme: dark;
-            --page: #08131d;
-            --panel: #101f2b;
-            --panel-raised: #172b38;
-            --border: #29414d;
-            --text: #e5f2f2;
-            --muted: #8ea7af;
-            --accent: #41e6d0;
-            --accent-ink: #06201e;
-            --danger: #ff637d;
-            --blue: #71adff;
-            --sensor-idle: #132530;
+            color-scheme: light;
+            --page: #ffffff;
+            --panel: #ffffff;
+            --panel-raised: #fff0f7;
+            --border: #ecd5e1;
+            --text: #382631;
+            --muted: #806b79;
+            --accent: #c64f86;
+            --accent-ink: #ffffff;
+            --danger: #d9445c;
+            --blue: #8b69b2;
+            --sensor-idle: #fff5fa;
         }
 
         * {
@@ -29,10 +29,10 @@
             margin: 0;
             min-width: 320px;
             background:
-                radial-gradient(ellipse at 8% 0%, rgba(31, 202, 181, 0.08), transparent 34rem),
-                radial-gradient(ellipse at 92% 12%, rgba(74, 125, 235, 0.07), transparent 30rem),
-                linear-gradient(rgba(75, 128, 139, 0.025) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(75, 128, 139, 0.025) 1px, transparent 1px),
+                radial-gradient(ellipse at 8% 0%, rgba(198, 79, 134, 0.07), transparent 34rem),
+                radial-gradient(ellipse at 92% 12%, rgba(139, 105, 178, 0.05), transparent 30rem),
+                linear-gradient(rgba(184, 140, 168, 0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(184, 140, 168, 0.035) 1px, transparent 1px),
                 var(--page);
             background-size: auto, auto, 32px 32px, 32px 32px, auto;
             color: var(--text);
@@ -45,15 +45,17 @@
             z-index: 0;
             inset: 0;
             background-image:
-                radial-gradient(circle, rgba(65, 230, 208, 0.3) 0 1.5px, transparent 2px),
-                linear-gradient(90deg, transparent 0 23px, rgba(65, 230, 208, 0.11) 23px 24px, transparent 24px 100%),
-                linear-gradient(0deg, transparent 0 23px, rgba(113, 173, 255, 0.09) 23px 24px, transparent 24px 100%);
+                radial-gradient(circle, rgba(198, 79, 134, 0.22) 0 1.5px, transparent 2px),
+                linear-gradient(90deg, transparent 0 23px, rgba(198, 79, 134, 0.08) 23px 24px, transparent 24px 100%),
+                linear-gradient(0deg, transparent 0 23px, rgba(139, 105, 178, 0.07) 23px 24px, transparent 24px 100%);
             background-position: 12px 12px, 12px 12px, 12px 12px;
             background-size: 96px 80px;
             content: "";
-            opacity: 0.2;
+            opacity: 0.1;
             pointer-events: none;
-            mask-image: linear-gradient(90deg, #000 0%, transparent 30%, transparent 70%, #000 100%);
+            mask-image:
+                radial-gradient(ellipse 42vw 42vh at top left, #000 0%, transparent 100%),
+                radial-gradient(ellipse 42vw 42vh at bottom right, #000 0%, transparent 100%);
         }
 
         .circuit-decoration {
@@ -61,8 +63,11 @@
             z-index: 0;
             inset: 0;
             overflow: hidden;
-            opacity: 0.22;
+            opacity: 0.19;
             pointer-events: none;
+            mask-image:
+                radial-gradient(ellipse 42vw 42vh at top left, #000 0%, transparent 100%),
+                radial-gradient(ellipse 42vw 42vh at bottom right, #000 0%, transparent 100%);
         }
 
         .circuit-decoration svg {
@@ -72,39 +77,39 @@
 
         .circuit-trace {
             fill: none;
-            stroke: #27bfe8;
+            stroke: #c5a7d9;
             stroke-linecap: round;
             stroke-linejoin: round;
             stroke-width: 2;
         }
 
         .circuit-trace.secondary {
-            stroke: #41e6d0;
+            stroke: #d978a3;
             stroke-width: 1.5;
         }
 
         .circuit-via {
-            fill: #08131d;
-            stroke: #41e6d0;
+            fill: #ffffff;
+            stroke: #d978a3;
             stroke-width: 2;
         }
 
         .circuit-pad {
-            fill: #ffc857;
-            stroke: #ffe4a0;
+            fill: #d8a53d;
+            stroke: #f0d79b;
             stroke-width: 1;
         }
 
         .circuit-sweep {
             fill: none;
-            stroke: #b9f4ff;
+            stroke: #ffd1e5;
             stroke-linecap: round;
             stroke-width: 5;
             opacity: 0.07;
         }
 
         .circuit-sweep.inner {
-            stroke: #27bfe8;
+            stroke: #c5a7d9;
             stroke-width: 2;
             opacity: 0.18;
         }
@@ -139,7 +144,7 @@
             gap: 20px;
             margin-bottom: 26px;
             padding-bottom: 16px;
-            border-bottom: 1px solid rgba(65, 230, 208, 0.16);
+            border-bottom: 1px solid rgba(198, 79, 134, 0.22);
         }
 
         .topbar::after {
@@ -150,7 +155,7 @@
             height: 3px;
             background: linear-gradient(90deg, var(--accent), var(--blue), transparent);
             content: "";
-            box-shadow: 0 0 12px rgba(65, 230, 208, 0.3);
+            box-shadow: 0 0 12px rgba(198, 79, 134, 0.24);
         }
 
         .brand {
@@ -166,16 +171,16 @@
             flex: 0 0 auto;
             place-items: center;
             border-radius: 12px;
-            border: 1px solid rgba(65, 230, 208, 0.44);
-            background: linear-gradient(145deg, #173d45, #172b45);
-            box-shadow: 0 0 24px rgba(65, 230, 208, 0.13), inset 0 0 12px rgba(65, 230, 208, 0.08);
+            border: 1px solid rgba(198, 79, 134, 0.35);
+            background: linear-gradient(145deg, #fff0f7, #f8eafa);
+            box-shadow: 0 0 24px rgba(198, 79, 134, 0.12), inset 0 0 12px rgba(198, 79, 134, 0.05);
         }
 
         .brand-mark svg {
             width: 31px;
             height: 31px;
             overflow: visible;
-            filter: drop-shadow(0 0 5px rgba(65, 230, 208, 0.42));
+            filter: drop-shadow(0 0 5px rgba(198, 79, 134, 0.3));
         }
 
         h1,
@@ -187,15 +192,6 @@
         h1 {
             font-size: 20px;
             letter-spacing: 0.02em;
-        }
-
-        .eyebrow {
-            color: var(--muted);
-            font-size: 11px;
-            font-weight: 800;
-            letter-spacing: 0.15em;
-            font-family: "Cascadia Code", Consolas, monospace;
-            text-transform: uppercase;
         }
 
         .connect-button,
@@ -221,16 +217,16 @@
         .connect-button {
             min-height: 46px;
             padding: 0 18px;
-            border-color: rgba(65, 230, 208, 0.28);
-            background: linear-gradient(135deg, #167d78, #146d8c);
-            box-shadow: 0 0 18px rgba(65, 230, 208, 0.12);
-            color: #e6fffb;
+            border-color: rgba(165, 48, 100, 0.35);
+            background: linear-gradient(135deg, #c64f86, #a93f72);
+            box-shadow: 0 0 18px rgba(198, 79, 134, 0.16);
+            color: #ffffff;
         }
 
         .connect-button.serial {
-            border-color: rgba(113, 173, 255, 0.32);
-            background: linear-gradient(135deg, #20385f, #263354);
-            color: #c7ddff;
+            border-color: rgba(107, 75, 143, 0.3);
+            background: linear-gradient(135deg, #8063a2, #685084);
+            color: #ffffff;
         }
 
         .connect-button:disabled {
@@ -272,26 +268,26 @@
         .panel {
             border: 1px solid var(--border);
             border-radius: 18px;
-            background: linear-gradient(145deg, rgba(17, 33, 45, 0.97), rgba(13, 27, 38, 0.97));
-            box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22), inset 0 1px rgba(217, 250, 255, 0.035);
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(255, 248, 252, 0.98));
+            box-shadow: 0 12px 30px rgba(92, 48, 72, 0.08), inset 0 1px rgba(255, 255, 255, 0.8);
         }
 
         .status-card {
             min-height: 92px;
             padding: 15px 17px;
-            border-top: 2px solid var(--status-led, #41e6d0);
+            border-top: 2px solid var(--status-led, #c64f86);
         }
 
         .status-card:nth-child(2) {
-            --status-led: #ffc857;
+            --status-led: #c28a19;
         }
 
         .status-card:nth-child(3) {
-            --status-led: #71adff;
+            --status-led: #8b69b2;
         }
 
         .status-card:nth-child(4) {
-            --status-led: #b895ff;
+            --status-led: #8b69b2;
         }
 
         .status-label {
@@ -334,7 +330,7 @@
         }
 
         .status-value.pending {
-            color: #ffc857;
+            color: #8f6200;
         }
 
         .workspace {
@@ -381,8 +377,8 @@
             height: 7px;
             border: 1px solid var(--accent);
             border-radius: 50%;
-            background: rgba(65, 230, 208, 0.18);
-            box-shadow: 0 0 9px rgba(65, 230, 208, 0.35);
+            background: rgba(198, 79, 134, 0.14);
+            box-shadow: 0 0 9px rgba(198, 79, 134, 0.24);
             content: "";
             pointer-events: none;
         }
@@ -447,20 +443,20 @@
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
-            border-color: #34515e;
-            background: linear-gradient(145deg, #203946, #152833);
-            box-shadow: inset 0 1px rgba(226, 252, 255, 0.06), 0 5px 12px rgba(0, 0, 0, 0.16);
+            border-color: #e6c8d7;
+            background: linear-gradient(145deg, #fff7fb, #f8edf4);
+            box-shadow: inset 0 1px rgba(255, 255, 255, 0.8), 0 5px 12px rgba(92, 48, 72, 0.08);
             font-size: 22px;
         }
 
         .motor-button:hover,
         .motor-button.is-active {
             border-color: var(--accent);
-            background: #1d3942;
+            background: #f8e4ef;
         }
 
         .motor-button.is-active {
-            box-shadow: 0 0 0 2px rgba(65, 230, 208, 0.2), 0 0 18px rgba(65, 230, 208, 0.12);
+            box-shadow: 0 0 0 2px rgba(198, 79, 134, 0.18), 0 0 18px rgba(198, 79, 134, 0.1);
         }
 
         .motor-spacer {
@@ -472,7 +468,7 @@
             min-height: 46px;
             background: rgba(255, 99, 125, 0.1);
             border-color: rgba(255, 99, 125, 0.38);
-            color: #ff8295;
+            color: #b52f49;
         }
 
         .motor-hint {
@@ -516,19 +512,19 @@
             min-height: 44px;
             padding: 8px 10px;
             border-color: var(--border);
-            background: linear-gradient(145deg, #1b303d, #142630);
+            background: linear-gradient(145deg, #fff7fb, #f8edf4);
             text-align: center;
         }
 
         .action-button.primary {
-            border-color: rgba(65, 230, 208, 0.3);
-            background: linear-gradient(135deg, #167d78, #17688a);
-            color: #e6fffb;
+            border-color: rgba(165, 48, 100, 0.35);
+            background: linear-gradient(135deg, #c64f86, #a93f72);
+            color: #ffffff;
         }
 
         .action-button:hover:not(:disabled) {
             border-color: var(--accent);
-            color: #8ff9e7;
+            color: #a83f72;
         }
 
         .calibration-note {
@@ -559,7 +555,7 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 10px;
-            background: #0b1923;
+            background: #ffffff;
             color: var(--text);
             font: inherit;
             font-variant-numeric: tabular-nums;
@@ -585,8 +581,8 @@
         }
 
         .follow-button.is-active {
-            border-color: rgba(255, 99, 125, 0.34);
-            background: rgba(255, 99, 125, 0.1);
+            border-color: rgba(217, 68, 92, 0.34);
+            background: rgba(217, 68, 92, 0.08);
             color: var(--danger);
         }
 
@@ -615,7 +611,7 @@
             padding: 14px;
             border: 1px solid var(--border);
             border-radius: 12px;
-            background: linear-gradient(145deg, #1a303c, #172936);
+            background: linear-gradient(145deg, #ffffff, #fff6fa);
         }
 
         .encoder-reading span {
@@ -660,7 +656,7 @@
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: #506570;
+            background: #b5a3af;
             content: "";
         }
 
@@ -670,13 +666,13 @@
 
         .line-state.detected::before {
             background: var(--accent);
-            box-shadow: 0 0 10px rgba(65, 230, 208, 0.65);
+            box-shadow: 0 0 10px rgba(198, 79, 134, 0.4);
         }
 
         .sensor-scroll {
             overflow-x: auto;
             padding: 13px 0 7px;
-            scrollbar-color: #397b83 var(--panel);
+            scrollbar-color: #d18aad var(--panel);
             scrollbar-width: thin;
         }
 
@@ -700,7 +696,7 @@
 
         .sensor-cell.active {
             border-color: var(--accent);
-            background: rgba(65, 230, 208, 0.1);
+            background: rgba(198, 79, 134, 0.1);
         }
 
         .sensor-cell.unknown {
@@ -732,14 +728,14 @@
             margin: 9px 2px 6px;
             overflow: hidden;
             border-radius: 5px;
-            background: #0b1b25;
+            background: #f3e8ef;
         }
 
         .sensor-fill {
             width: 100%;
             height: 0;
             border-radius: 4px 4px 0 0;
-            background: linear-gradient(0deg, #ffc857, #41e6d0);
+            background: linear-gradient(0deg, #d8a53d, #c64f86);
             transition: height 100ms linear;
         }
 
@@ -765,7 +761,15 @@
 
         .log-heading {
             justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
             margin-bottom: 12px;
+        }
+
+        .log-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
         }
 
         .clear-button {
@@ -783,8 +787,8 @@
             padding: 12px;
             border: 1px solid var(--border);
             border-radius: 11px;
-            background: #091720;
-            color: #b8d0d5;
+            background: #fff7fb;
+            color: #54424e;
             font: 12px/1.65 "Cascadia Code", Consolas, monospace;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
@@ -803,7 +807,7 @@
             padding: 8px 10px;
             border: 1px solid var(--border);
             border-radius: 9px;
-            background: #091720;
+            background: #fff7fb;
             color: var(--text);
             font: 12px "Cascadia Code", Consolas, monospace;
         }
@@ -832,10 +836,10 @@
         .notice {
             margin-top: 14px;
             padding: 11px 13px;
-            border: 1px solid rgba(65, 230, 208, 0.22);
+            border: 1px solid rgba(198, 79, 134, 0.24);
             border-radius: 12px;
-            background: rgba(65, 230, 208, 0.07);
-            color: #9ce5dc;
+            background: rgba(198, 79, 134, 0.07);
+            color: #85445f;
             font-size: 12px;
         }
 
@@ -990,14 +994,13 @@
             <div class="brand">
                 <div class="brand-mark" aria-hidden="true">
                     <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M13 3v6m7-6v6m7-6v6m7-6v6M13 31v6m7-6v6m7-6v6m7-6v6M3 13h6m-6 7h6m-6 7h6m-6-14v14M31 13h6m-6 7h6m-6 7h6m-6-14v14" stroke="#41e6d0" stroke-width="2" stroke-linecap="round"/>
-                        <rect x="10" y="10" width="20" height="20" rx="4" fill="#173d45" stroke="#8ff9e7" stroke-width="1.5"/>
-                        <path d="M15 16h10M15 20h10M15 24h6" stroke="#71adff" stroke-width="1.5" stroke-linecap="round"/>
-                        <circle cx="25" cy="24" r="1.5" fill="#ffc857"/>
+                        <path d="M13 3v6m7-6v6m7-6v6m7-6v6M13 31v6m7-6v6m7-6v6m7-6v6M3 13h6m-6 7h6m-6 7h6m-6-14v14M31 13h6m-6 7h6m-6 7h6m-6-14v14" stroke="#c64f86" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="10" y="10" width="20" height="20" rx="4" fill="#fff0f7" stroke="#d978a3" stroke-width="1.5"/>
+                        <path d="M15 16h10M15 20h10M15 24h6" stroke="#8b69b2" stroke-width="1.5" stroke-linecap="round"/>
+                        <circle cx="25" cy="24" r="1.5" fill="#c28a19"/>
                     </svg>
                 </div>
                 <div>
-                    <p class="eyebrow">KŌBŌ ELECTRONICS LAB · 日本</p>
                     <h1>HIGH-SPEED BLE</h1>
                 </div>
             </div>
@@ -1065,7 +1068,11 @@
             <section class="panel log-panel" aria-labelledby="logHeading">
                 <div class="log-heading">
                     <h2 id="logHeading">📜 Nhật ký kết nối</h2>
-                    <button class="clear-button" id="clearLogButton" type="button">Xóa nhật ký</button>
+                    <div class="log-actions">
+                        <button class="clear-button" id="copyLogButton" type="button">Sao chép</button>
+                        <button class="clear-button" id="downloadLogButton" type="button">Tải nhật ký</button>
+                        <button class="clear-button" id="clearLogButton" type="button">Xóa nhật ký</button>
+                    </div>
                 </div>
                 <div class="log" id="log" role="log" aria-live="polite"></div>
                 <form class="command-row" id="commandForm">
@@ -1889,6 +1896,33 @@
 
             document.getElementById('clearLogButton').addEventListener('click', () => {
                 elements.log.textContent = '';
+            });
+
+            document.getElementById('copyLogButton').addEventListener('click', async () => {
+                if (!navigator.clipboard?.writeText) {
+                    addLog('Không thể sao chép nhật ký trong trình duyệt này.');
+                    return;
+                }
+
+                try {
+                    await navigator.clipboard.writeText(elements.log.textContent);
+                    addLog('Đã sao chép nhật ký vào clipboard.');
+                } catch (error) {
+                    addLog(`Sao chép nhật ký thất bại: ${error.message}`);
+                }
+            });
+
+            document.getElementById('downloadLogButton').addEventListener('click', () => {
+                const file = new Blob([elements.log.textContent], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(file);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `robot-log-${new Date().toISOString().replace(/[:.]/g, '-')}.txt`;
+                document.body.append(link);
+                link.click();
+                link.remove();
+                window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+                addLog('Đã tải nhật ký kết nối.');
             });
 
             window.addEventListener('blur', () => releaseAllControls());
