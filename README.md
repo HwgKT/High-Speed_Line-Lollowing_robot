@@ -4,11 +4,11 @@ Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ c
 
 ## Website điều khiển
 
-### [⚡ Mở HIGH-SPEED BLE](https://phanyennhi1412-blip.github.io/Line-following-robot/)
+### [🌐 Mở giao diện HIGH-SPEED BLE mới nhất](https://hwgkt.github.io/High-Speed_Line-Lollowing_robot/)
 
-Giao diện được lưu tại [`web/index.html`](web/index.html) và tự động xuất bản lên GitHub Pages khi cập nhật thư mục `web/` trên nhánh `main`. Sau khi push thay đổi, theo dõi workflow **Deploy BLE web to GitHub Pages** trong tab **Actions**; cần workflow chạy thành công để phiên bản mới xuất hiện tại link phía trên. Nếu Pages chưa được cấu hình, vào **Settings → Pages**, chọn **GitHub Actions** tại *Build and deployment*.
+Giao diện được lưu tại [`web/index.html`](web/index.html) và tự động xuất bản lên GitHub Pages khi cập nhật thư mục `web/` trên nhánh `main`. Sau khi push thay đổi, theo dõi workflow **Deploy BLE web to GitHub Pages** trong tab **Actions**; link phía trên hoạt động sau khi GitHub Pages được cấu hình và workflow deploy thành công. Nếu deploy báo lỗi ở bước **Configure GitHub Pages**, vào **Settings → Pages**, chọn **GitHub Actions** tại *Build and deployment*, rồi chạy lại workflow.
 
-Link Pages giữ nguyên khi chỉ cập nhật thiết kế; sau khi workflow deploy thành công, chính link trên sẽ mở giao diện mới.
+Link Pages này thuộc repository `HwgKT/High-Speed_Line-Lollowing_robot` và giữ nguyên khi chỉ cập nhật thiết kế.
 
 Dùng Chrome hoặc Edge trên máy tính, mở trang qua **HTTPS** (GitHub Pages) hoặc `localhost`; không mở bằng `file://`. Trang hỗ trợ kết nối **Bluetooth LE** và **USB Serial**.
 

@@ -31,8 +31,8 @@
             background:
                 radial-gradient(ellipse at 8% 0%, rgba(198, 79, 134, 0.07), transparent 34rem),
                 radial-gradient(ellipse at 92% 12%, rgba(139, 105, 178, 0.05), transparent 30rem),
-                linear-gradient(rgba(184, 140, 168, 0.035) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(184, 140, 168, 0.035) 1px, transparent 1px),
+                linear-gradient(rgba(184, 140, 168, 0.055) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(184, 140, 168, 0.055) 1px, transparent 1px),
                 var(--page);
             background-size: auto, auto, 32px 32px, 32px 32px, auto;
             color: var(--text);
@@ -45,13 +45,13 @@
             z-index: 0;
             inset: 0;
             background-image:
-                radial-gradient(circle, rgba(198, 79, 134, 0.22) 0 1.5px, transparent 2px),
-                linear-gradient(90deg, transparent 0 23px, rgba(198, 79, 134, 0.08) 23px 24px, transparent 24px 100%),
-                linear-gradient(0deg, transparent 0 23px, rgba(139, 105, 178, 0.07) 23px 24px, transparent 24px 100%);
+                radial-gradient(circle, rgba(198, 79, 134, 0.3) 0 1.5px, transparent 2px),
+                linear-gradient(90deg, transparent 0 23px, rgba(198, 79, 134, 0.14) 23px 24px, transparent 24px 100%),
+                linear-gradient(0deg, transparent 0 23px, rgba(139, 105, 178, 0.12) 23px 24px, transparent 24px 100%);
             background-position: 12px 12px, 12px 12px, 12px 12px;
             background-size: 96px 80px;
             content: "";
-            opacity: 0.1;
+            opacity: 0.16;
             pointer-events: none;
             mask-image:
                 radial-gradient(ellipse 42vw 42vh at top left, #000 0%, transparent 100%),
@@ -63,7 +63,7 @@
             z-index: 0;
             inset: 0;
             overflow: hidden;
-            opacity: 0.19;
+            opacity: 0.27;
             pointer-events: none;
             mask-image:
                 radial-gradient(ellipse 42vw 42vh at top left, #000 0%, transparent 100%),
@@ -1005,8 +1005,8 @@
                 </div>
             </div>
             <div class="connection-actions" aria-label="Chọn kết nối với ESP32">
-                <button class="connect-button" id="connectButton" type="button">Kết nối BLE</button>
-                <button class="connect-button serial" id="serialConnectButton" type="button">Kết nối cáp USB</button>
+                <button class="connect-button" id="connectButton" type="button">📡 Kết nối BLE</button>
+                <button class="connect-button serial" id="serialConnectButton" type="button">🔌 Kết nối cáp USB</button>
             </div>
         </header>
 
@@ -1069,8 +1069,8 @@
                 <div class="log-heading">
                     <h2 id="logHeading">📜 Nhật ký kết nối</h2>
                     <div class="log-actions">
-                        <button class="clear-button" id="copyLogButton" type="button">Sao chép</button>
-                        <button class="clear-button" id="downloadLogButton" type="button">Tải nhật ký</button>
+                        <button class="clear-button" id="copyLogButton" type="button">📋 Sao chép</button>
+                        <button class="clear-button" id="downloadLogButton" type="button">⬇️ Tải nhật ký</button>
                         <button class="clear-button" id="clearLogButton" type="button">Xóa nhật ký</button>
                     </div>
                 </div>
@@ -1078,7 +1078,7 @@
                 <form class="command-row" id="commandForm">
                     <input class="command-input" id="commandInput" type="text" maxlength="63" autocomplete="off"
                         placeholder="Lệnh robot, ví dụ: SYNC hoặc ENC_RESET" aria-label="Lệnh tùy chỉnh">
-                    <button class="command-send" id="commandSendButton" type="submit">Gửi</button>
+                    <button class="command-send" id="commandSendButton" type="submit">📤 Gửi</button>
                 </form>
                 <p class="hint command-hint">Lệnh được gửi nguyên văn tới ESP32; lệnh không hỗ trợ sẽ được firmware ghi vào nhật ký.</p>
             </section>
@@ -1111,8 +1111,8 @@
                     </div>
                 </div>
                 <div class="tuning-actions">
-                    <button class="action-button primary" id="saveSettingsButton" type="button">Lưu vào ESP32</button>
-                    <button class="follow-button" id="followButton" type="button" aria-pressed="false">Chạy bám line</button>
+                    <button class="action-button primary" id="saveSettingsButton" type="button">💾 Lưu vào ESP32</button>
+                    <button class="follow-button" id="followButton" type="button" aria-pressed="false">🏁 Chạy bám line</button>
                 </div>
                 <p class="hint settings-note">Tốc độ cơ bản là PWM chạy thẳng; PWM tối đa giới hạn công suất hai động cơ. P/I/D dùng sai lệch vị trí của dãy cảm biến.</p>
             </section>
@@ -1357,7 +1357,7 @@
 
             function updateFollowState(following) {
                 isFollowing = following;
-                elements.follow.textContent = following ? 'Dừng bám line' : 'Chạy bám line';
+                elements.follow.textContent = following ? '⏹️ Dừng bám line' : '🏁 Chạy bám line';
                 elements.follow.classList.toggle('is-active', following);
                 elements.follow.setAttribute('aria-pressed', String(following));
             }
@@ -1370,10 +1370,10 @@
                     ? `Đã kết nối ${transportLabel}`
                     : 'Chưa kết nối';
                 elements.connection.className = `status-value ${connected ? 'online' : 'offline'}`;
-                elements.connect.textContent = connected && type === 'ble' ? 'Ngắt BLE' : 'Kết nối BLE';
+                elements.connect.textContent = connected && type === 'ble' ? '🔌 Ngắt BLE' : '📡 Kết nối BLE';
                 elements.serialConnect.textContent = connected && type === 'serial'
-                    ? 'Ngắt cáp USB'
-                    : 'Kết nối cáp USB';
+                    ? '⏏️ Ngắt cáp USB'
+                    : '🔌 Kết nối cáp USB';
                 elements.connect.classList.toggle('is-connected', connected && type === 'ble');
                 elements.serialConnect.classList.toggle('is-connected', connected && type === 'serial');
                 elements.connect.disabled = connected && type !== 'ble';
