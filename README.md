@@ -1,10 +1,10 @@
-# High-Speed Line Following Robot
+# HIGH-SPEED BLE
 
-Firmware ESP32 và giao diện BLE để hiệu chuẩn, kiểm tra động cơ, đọc cảm biến line và theo dõi encoder GA25-370.
+High-Speed Line Following Robot — firmware ESP32 và giao diện BLE để hiệu chuẩn, kiểm tra động cơ, đọc cảm biến line và theo dõi encoder GA25-370.
 
 ## Mở giao diện BLE
 
-**[Mở LineLab BLE trên GitHub Pages](https://phanyennhi1412-blip.github.io/Line-following-robot/)**
+**[Mở HIGH-SPEED BLE trên GitHub Pages](https://hwgkt.github.io/High-Speed_Line-Lollowing_robot/)**
 
 Giao diện tĩnh nằm trong [`web/index.html`](web/index.html), được tự động xuất bản lên GitHub Pages bằng workflow khi có thay đổi trong `web/` hoặc workflow deploy trên nhánh `main`. Nếu trang chưa mở được sau lần đầu, vào **Settings → Pages**, chọn **GitHub Actions** ở mục *Build and deployment*, sau đó chờ workflow `Deploy BLE web to GitHub Pages` chạy thành công trong tab **Actions**.
 
@@ -55,6 +55,19 @@ Firmware phát giá trị analog 12-bit (0–4095) và chuỗi bit phát hiện 
 Khung cảm biến hiển thị **MẮT 01–16** theo thứ tự mux `S1`–`S16`. Giá trị analog dùng để kiểm tra tín hiệu; ô `LINE` được xác định từ bit cảm biến firmware gửi. Khung encoder hiển thị xung tích lũy riêng cho động cơ trái và phải.
 
 P/I/D mặc định lần lượt là `18`, `0` và `0.25`; tốc độ cơ bản mặc định là `150` và PWM tối đa là `255` (thang PWM 0–255). Tốc độ cơ bản là mức PWM chạy thẳng, còn PWM tối đa giới hạn đầu ra mỗi động cơ. Trang đọc lại cấu hình hiện tại từ ESP32 khi kết nối hoặc bấm **Đọc lại trạng thái**. Cấu hình chỉ được giữ trong RAM, không lưu qua lần khởi động lại.
+
+## Cấu trúc firmware
+
+`src/main.cpp` chỉ khởi tạo và điều phối các module trong `lib/`. Mỗi module có file `.h` để khai báo giao diện và file `.cpp` chứa phần cài đặt:
+
+- `BLEcontrol`: BLE, xử lý lệnh từ trang web và gửi telemetry.
+- `Button`: trạng thái nhấn/nhả và điều khiển thủ công.
+- `Encoder`: ngắt đọc xung, đọc và đặt lại bộ đếm.
+- `Motor`: thiết lập chân và điều khiển hai động cơ.
+- `PID`: thông số PID và điều khiển bám line.
+- `Sensor`: đọc 16 cảm biến, hiệu chuẩn và tính vị trí line.
+
+Trang web là nội dung tĩnh trong `web/index.html`, được deploy riêng bằng GitHub Pages; firmware không tạo HTML. BLE trong firmware giữ vai trò trao đổi lệnh và dữ liệu với trang web.
 
 ## Cài đặt và nạp firmware
 

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#101820">
-    <title>LineLab | BLE</title>
+    <title>HIGH-SPEED BLE | Line Following Robot</title>
     <style>
         :root {
             color-scheme: dark;
@@ -231,6 +231,11 @@
             gap: 14px;
         }
 
+        .keyboard-hint {
+            margin-top: -3px;
+            text-align: center;
+        }
+
         .motor-pad {
             display: grid;
             grid-template-columns: repeat(3, 76px);
@@ -273,6 +278,68 @@
         .motor-hint {
             max-width: 300px;
             text-align: center;
+        }
+
+        .speed-control {
+            width: min(100%, 330px);
+            padding: 13px 15px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: #121d24;
+        }
+
+        .speed-heading,
+        .speed-presets {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .speed-heading {
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .speed-value {
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .speed-slider {
+            width: 100%;
+            accent-color: var(--accent);
+        }
+
+        .speed-presets {
+            margin-top: 9px;
+        }
+
+        .speed-preset {
+            flex: 1;
+            min-height: 32px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--panel-raised);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .speed-preset:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .speed-slider:disabled,
+        .speed-preset:disabled,
+        .command-input:disabled,
+        .command-send:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
         }
 
         .calibration-actions {
@@ -559,6 +626,40 @@
             overflow-wrap: anywhere;
         }
 
+        .command-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .command-input {
+            min-width: 0;
+            flex: 1;
+            min-height: 38px;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: #121d24;
+            color: var(--text);
+            font: 12px "Cascadia Code", Consolas, monospace;
+        }
+
+        .command-send {
+            min-height: 38px;
+            padding: 0 13px;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            background: var(--panel-raised);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 750;
+        }
+
+        .command-hint {
+            margin-top: 7px;
+        }
+
         .notice {
             margin-top: 14px;
             padding: 11px 13px;
@@ -605,13 +706,18 @@
                 align-items: flex-start;
             }
 
+            .topbar .brand {
+                min-width: 0;
+            }
+
             .brand-mark {
                 width: 38px;
                 height: 38px;
+                flex: 0 0 auto;
             }
 
             h1 {
-                font-size: 17px;
+                font-size: 15px;
             }
 
             .connect-button {
@@ -644,10 +750,10 @@
     <main class="shell">
         <header class="topbar">
             <div class="brand">
-                <div class="brand-mark" aria-hidden="true">L</div>
+                <div class="brand-mark" aria-hidden="true">A</div>
                 <div>
-                    <p class="eyebrow">Line follower · BLE bench</p>
-                    <h1>LineLab Control</h1>
+                    <p class="eyebrow">16-sensor high-speed line follower</p>
+                    <h1>HIGH-SPEED BLE</h1>
                 </div>
             </div>
             <button class="connect-button" id="connectButton" type="button">Kết nối ESP32</button>
@@ -694,6 +800,21 @@
                     </div>
                     <button class="stop-button" id="stopButton" type="button">DỪNG ĐỘNG CƠ</button>
                     <p class="hint motor-hint">Thử xe trên giá kê hoặc khu vực trống. Nút dừng gửi lệnh STOP trực tiếp tới ESP32.</p>
+                    <p class="hint keyboard-hint">Bàn phím: <strong>W A S D</strong> hoặc phím mũi tên để lái, <strong>Space / Esc</strong> để dừng.</p>
+                </div>
+
+                <div class="speed-control" aria-label="Điều chỉnh tốc độ cơ bản">
+                    <div class="speed-heading">
+                        <label for="speedSlider">Tốc độ cơ bản</label>
+                        <span class="speed-value" id="speedDisplay">150 / 255</span>
+                    </div>
+                    <input class="speed-slider" id="speedSlider" type="range" min="0" max="255" step="1" value="150" aria-label="Tốc độ cơ bản PWM">
+                    <div class="speed-presets" aria-label="Mức tốc độ cài sẵn">
+                        <button class="speed-preset" type="button" data-speed-preset="100">100 · Thấp</button>
+                        <button class="speed-preset" type="button" data-speed-preset="150">150 · Vừa</button>
+                        <button class="speed-preset" type="button" data-speed-preset="200">200 · Cao</button>
+                        <button class="speed-preset" type="button" data-speed-preset="255">255 · Tối đa</button>
+                    </div>
                 </div>
 
                 <div class="calibration-actions" aria-label="Hiệu chuẩn cảm biến">
@@ -711,6 +832,12 @@
                     <button class="clear-button" id="clearLogButton" type="button">Xóa nhật ký</button>
                 </div>
                 <div class="log" id="log" role="log" aria-live="polite"></div>
+                <form class="command-row" id="commandForm">
+                    <input class="command-input" id="commandInput" type="text" maxlength="63" autocomplete="off"
+                        placeholder="Lệnh BLE, ví dụ: SYNC hoặc ENC_RESET" aria-label="Lệnh BLE tùy chỉnh">
+                    <button class="command-send" id="commandSendButton" type="submit">Gửi</button>
+                </form>
+                <p class="hint command-hint">Lệnh được gửi nguyên văn tới ESP32; lệnh không hỗ trợ sẽ được firmware ghi vào nhật ký.</p>
             </section>
 
             <section class="panel settings-panel" aria-labelledby="settingsHeading">
@@ -819,12 +946,18 @@
                 pidD: document.getElementById('pidD'),
                 baseSpeed: document.getElementById('baseSpeed'),
                 pwmLimit: document.getElementById('pwmLimit'),
+                speedSlider: document.getElementById('speedSlider'),
+                speedDisplay: document.getElementById('speedDisplay'),
+                commandInput: document.getElementById('commandInput'),
+                commandSend: document.getElementById('commandSendButton'),
+                commandForm: document.getElementById('commandForm'),
                 log: document.getElementById('log')
             };
 
             const sensorValues = Array(SENSOR_COUNT).fill(null);
             const sensorDigital = Array(SENSOR_COUNT).fill(null);
             const heldButtons = new Map();
+            const keyboardButtons = new Map();
             const decoder = new TextDecoder();
             let device = null;
             let rxCharacteristic = null;
@@ -832,6 +965,31 @@
             let isFollowing = false;
             let receiveBuffer = '';
             let writeQueue = Promise.resolve();
+            let speedDebounce = null;
+
+            function isMotorCodeHeld(code) {
+                return [...heldButtons.values(), ...keyboardButtons.values()].includes(code);
+            }
+
+            function updateMotorButtonStyle(code) {
+                const button = document.querySelector(`[data-motor="${code}"]`);
+                if (button) button.classList.toggle('is-active', isMotorCodeHeld(code));
+            }
+
+            function updateSpeedControl(value, send) {
+                const numericValue = Number(value);
+                if (!Number.isFinite(numericValue)) return;
+                const speed = Math.max(0, Math.min(255, Math.round(numericValue)));
+                elements.baseSpeed.value = String(speed);
+                elements.speedSlider.value = String(speed);
+                elements.speedDisplay.textContent = `${speed} / 255`;
+                if (send) {
+                    clearTimeout(speedDebounce);
+                    speedDebounce = setTimeout(() => {
+                        void sendCommand(`V:${speed}`);
+                    }, 180);
+                }
+            }
 
             function addLog(message) {
                 const time = new Date().toLocaleTimeString();
@@ -980,10 +1138,19 @@
                 document.querySelectorAll('[data-motor], [data-command]').forEach((button) => {
                     button.disabled = !connected;
                 });
+                document.querySelectorAll('[data-speed-preset]').forEach((button) => {
+                    button.disabled = !connected;
+                });
+                elements.speedSlider.disabled = !connected;
+                elements.commandInput.disabled = !connected;
+                elements.commandSend.disabled = !connected;
                 elements.stop.disabled = !connected;
                 elements.saveSettings.disabled = !connected;
                 elements.follow.disabled = !connected;
                 if (!connected) {
+                    clearTimeout(speedDebounce);
+                    speedDebounce = null;
+                    clearHeldButtonStyles();
                     updateFollowState(false);
                     rxCharacteristic = null;
                     receiveBuffer = '';
@@ -1084,7 +1251,11 @@
                         V: elements.baseSpeed,
                         W: elements.pwmLimit
                     };
-                    settingFields[settingMatch[1]].value = settingMatch[2];
+                    if (settingMatch[1] === 'V') {
+                        updateSpeedControl(settingMatch[2], false);
+                    } else {
+                        settingFields[settingMatch[1]].value = settingMatch[2];
+                    }
                     return;
                 }
 
@@ -1198,43 +1369,113 @@
             }
 
             function clearHeldButtonStyles() {
+                heldButtons.clear();
+                keyboardButtons.clear();
                 document.querySelectorAll('.motor-button.is-active').forEach((button) => {
                     button.classList.remove('is-active');
                 });
-                heldButtons.clear();
             }
 
             async function releaseMotorButton(button) {
                 const code = heldButtons.get(button);
                 if (!code) return;
                 heldButtons.delete(button);
-                button.classList.remove('is-active');
-                await sendCommand(`!B${code}0`, false);
+                updateMotorButtonStyle(code);
+                if (!isMotorCodeHeld(code)) await sendCommand(`!B${code}0`, false);
             }
 
             async function releaseAllMotorButtons() {
-                const releases = [];
+                const codes = new Set();
                 for (const [button, code] of heldButtons) {
                     heldButtons.delete(button);
-                    button.classList.remove('is-active');
-                    releases.push(sendCommand(`!B${code}0`, false));
+                    codes.add(code);
                 }
+                const releases = [...codes]
+                    .filter((code) => !isMotorCodeHeld(code))
+                    .map((code) => sendCommand(`!B${code}0`, false));
+                codes.forEach(updateMotorButtonStyle);
                 await Promise.all(releases);
             }
+
+            async function releaseAllKeyboardButtons() {
+                const codes = new Set(keyboardButtons.values());
+                keyboardButtons.clear();
+                const releases = [...codes]
+                    .filter((code) => !isMotorCodeHeld(code))
+                    .map((code) => sendCommand(`!B${code}0`, false));
+                codes.forEach(updateMotorButtonStyle);
+                await Promise.all(releases);
+            }
+
+            async function releaseAllControls() {
+                await releaseAllMotorButtons();
+                await releaseAllKeyboardButtons();
+            }
+
+            function isTypingTarget(target) {
+                return target instanceof HTMLElement
+                    && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName));
+            }
+
+            function keyboardMotorCode(key) {
+                return ({
+                    w: '5',
+                    arrowup: '5',
+                    s: '6',
+                    arrowdown: '6',
+                    a: '7',
+                    arrowleft: '7',
+                    d: '8',
+                    arrowright: '8'
+                })[key.toLowerCase()] || null;
+            }
+
+            window.addEventListener('keydown', async (event) => {
+                if (!isConnected || isTypingTarget(event.target) || event.repeat) return;
+                if (event.code === 'Space' || event.key === 'Escape') {
+                    event.preventDefault();
+                    await releaseAllControls();
+                    await sendCommand('STOP');
+                    return;
+                }
+
+                const key = event.key.toLowerCase();
+                const code = keyboardMotorCode(key);
+                if (!code) return;
+                event.preventDefault();
+                if (keyboardButtons.has(key)) return;
+                const alreadyHeld = isMotorCodeHeld(code);
+                keyboardButtons.set(key, code);
+                updateMotorButtonStyle(code);
+                if (!alreadyHeld) await sendCommand(`!B${code}1`, false);
+            });
+
+            window.addEventListener('keyup', async (event) => {
+                if (isTypingTarget(event.target)) return;
+                const key = event.key.toLowerCase();
+                const code = keyboardButtons.get(key);
+                if (!code) return;
+                event.preventDefault();
+                keyboardButtons.delete(key);
+                updateMotorButtonStyle(code);
+                if (!isMotorCodeHeld(code)) await sendCommand(`!B${code}0`, false);
+            });
 
             function bindMotorButtons() {
                 document.querySelectorAll('[data-motor]').forEach((button) => {
                     button.addEventListener('pointerdown', async (event) => {
                         if (!isConnected || heldButtons.has(button)) return;
                         event.preventDefault();
+                        const code = button.dataset.motor;
+                        const alreadyHeld = isMotorCodeHeld(code);
                         heldButtons.set(button, button.dataset.motor);
-                        button.classList.add('is-active');
+                        updateMotorButtonStyle(code);
                         try {
                             button.setPointerCapture(event.pointerId);
                         } catch (error) {
                             addLog(`Không khóa được nút điều khiển: ${error.message}`);
                         }
-                        await sendCommand(`!B${button.dataset.motor}1`, false);
+                        if (!alreadyHeld) await sendCommand(`!B${code}1`, false);
                     });
                     button.addEventListener('pointerup', () => releaseMotorButton(button));
                     button.addEventListener('pointercancel', () => releaseMotorButton(button));
@@ -1255,6 +1496,8 @@
                     elements.pwmLimit
                 ];
                 if (fields.some((field) => !field.reportValidity())) return;
+                clearTimeout(speedDebounce);
+                speedDebounce = null;
                 const settings = [
                     `P:${Number(elements.pidP.value)}`,
                     `I:${Number(elements.pidI.value)}`,
@@ -1277,23 +1520,50 @@
             });
 
             elements.stop.addEventListener('click', async () => {
-                await releaseAllMotorButtons();
+                await releaseAllControls();
                 await sendCommand('STOP');
+            });
+
+            elements.speedSlider.addEventListener('input', () => {
+                updateSpeedControl(elements.speedSlider.value, true);
+            });
+
+            elements.baseSpeed.addEventListener('input', () => {
+                updateSpeedControl(elements.baseSpeed.value, false);
+            });
+
+            document.querySelectorAll('[data-speed-preset]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    updateSpeedControl(button.dataset.speedPreset, true);
+                });
+            });
+
+            elements.commandForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const command = elements.commandInput.value.trim();
+                if (!command) return;
+                if (/[\r\n]/.test(command)) {
+                    addLog('Chỉ gửi một lệnh mỗi lần.');
+                    return;
+                }
+                elements.commandInput.value = '';
+                void sendCommand(command);
             });
 
             document.getElementById('clearLogButton').addEventListener('click', () => {
                 elements.log.textContent = '';
             });
 
-            window.addEventListener('blur', () => releaseAllMotorButtons());
+            window.addEventListener('blur', () => releaseAllControls());
             document.addEventListener('visibilitychange', () => {
-                if (document.hidden) void releaseAllMotorButtons();
+                if (document.hidden) void releaseAllControls();
             });
 
             renderSensorCells();
             bindMotorButtons();
             updateConnectionState(false);
-            addLog('LineLab sẵn sàng. Kết nối ESP32 để bắt đầu.');
+            updateSpeedControl(elements.baseSpeed.value, false);
+            addLog('HIGH-SPEED BLE sẵn sàng. Kết nối ESP32 để bắt đầu.');
             if (!navigator.bluetooth) {
                 addLog('Web Bluetooth chưa được hỗ trợ trong trình duyệt hiện tại.');
             }
