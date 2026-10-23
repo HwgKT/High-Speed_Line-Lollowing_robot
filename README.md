@@ -1,10 +1,10 @@
 # HIGH-SPEED BLE | Line Following Robot
 
-Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ cao. Giao diện mang phong cách bàn kỹ thuật điện tử với nền bo mạch tối, đường mạch PCB kiểu Altium được làm dịu để không gây chói, đèn trạng thái nhiều màu và logo vi mạch.
+Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ cao. Giao diện mang phong cách bàn kỹ thuật điện tử với nền trắng, điểm nhấn hồng hài hòa và họa tiết đường mạch PCB.
 
-## Mở bảng điều khiển
+## Website điều khiển
 
-### [⚡ Mở HIGH-SPEED BLE — phiên bản web mới](https://phanyennhi1412-blip.github.io/Line-following-robot/)
+### [⚡ Mở HIGH-SPEED BLE](https://phanyennhi1412-blip.github.io/Line-following-robot/)
 
 Giao diện được lưu tại [`web/index.html`](web/index.html) và tự động xuất bản lên GitHub Pages khi cập nhật thư mục `web/` trên nhánh `main`. Sau khi push thay đổi, theo dõi workflow **Deploy BLE web to GitHub Pages** trong tab **Actions**; cần workflow chạy thành công để phiên bản mới xuất hiện tại link phía trên. Nếu Pages chưa được cấu hình, vào **Settings → Pages**, chọn **GitHub Actions** tại *Build and deployment*.
 
