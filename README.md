@@ -4,7 +4,7 @@ Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ c
 
 ## Website điều khiển
 
-### [🌐 Mở giao diện HIGH-SPEED BLE mới nhất](https://phanyennhi1412-blip.github.io/Line-following-robot/)
+### [🌐 Mở giao diện HIGH-SPEED BLE ](https://phanyennhi1412-blip.github.io/Line-following-robot/)
 
 Giao diện được lưu tại [`web/index.html`](web/index.html) và tự động xuất bản lên GitHub Pages khi cập nhật thư mục `web/` trên nhánh `main`. Sau khi push thay đổi, theo dõi workflow **Deploy BLE web to GitHub Pages** trong tab **Actions**; cần workflow chạy thành công để phiên bản mới xuất hiện tại link phía trên.
 
