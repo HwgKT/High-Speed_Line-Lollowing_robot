@@ -1,6 +1,6 @@
 # HIGH-SPEED BLE | Line Following Robot
 
-Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ cao. Giao diện mang phong cách bàn kỹ thuật điện tử: nền bo mạch tối, đường mạch, đèn trạng thái nhiều màu và logo vi mạch.
+Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ cao. Giao diện mang phong cách bàn kỹ thuật điện tử với nền bo mạch tối, đường mạch PCB kiểu Altium được làm dịu để không gây chói, đèn trạng thái nhiều màu và logo vi mạch.
 
 ## Mở bảng điều khiển
 
