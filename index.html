@@ -1,0 +1,1788 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32 Line Robot - Web Controller Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: radial-gradient(circle at 50% 0%, #171e38 0%, #0a0d18 100%);
+      --card-bg: rgba(22, 29, 49, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent-cyan: #00f2fe;
+      --accent-blue: #4facfe;
+      --accent-emerald: #10b981;
+      --accent-rose: #f43f5e;
+      --accent-amber: #f59e0b;
+      --accent-purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --glass-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 18px;
+      box-shadow: var(--glass-shadow);
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+    }
+
+    .brand-title h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-title p {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .connection-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      transition: all 0.3s ease;
+    }
+
+    .status-badge.connected {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 10px currentColor;
+    }
+
+    .btn-connect {
+      padding: 10px 20px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-ble {
+      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      color: #061122;
+      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.3);
+    }
+
+    .btn-ble:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 242, 254, 0.5);
+    }
+
+    .btn-serial {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-serial:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-2px);
+    }
+
+    /* Main Grid */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.3fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--glass-shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #cbd5e1;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .card-title span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* D-PAD CONTROLLER */
+    .dpad-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 10px 0;
+    }
+
+    .dpad-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .dpad-btn {
+      width: 76px;
+      height: 76px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #f8fafc;
+      font-size: 26px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .dpad-btn small {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .dpad-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      transform: scale(1.04);
+      border-color: var(--accent-cyan);
+    }
+
+    .dpad-btn:active,
+    .dpad-btn.active {
+      transform: scale(0.96);
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #061122;
+      box-shadow: 0 0 25px rgba(0, 242, 254, 0.7);
+    }
+
+    .dpad-btn:active small,
+    .dpad-btn.active small {
+      color: #061122;
+    }
+
+    .dpad-stop {
+      background: rgba(244, 63, 94, 0.15);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+
+    .dpad-stop:hover {
+      background: rgba(244, 63, 94, 0.3);
+      border-color: #f43f5e;
+    }
+
+    .dpad-stop:active,
+    .dpad-stop.active {
+      background: var(--accent-rose);
+      color: #fff;
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.7);
+    }
+
+    /* Speed Control */
+    .speed-box {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .speed-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .speed-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    input[type=range] {
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #1e293b;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.7);
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+    }
+
+    .speed-presets {
+      display: flex;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .btn-preset {
+      flex: 1;
+      padding: 6px 0;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-preset:hover {
+      background: rgba(0, 242, 254, 0.15);
+      color: var(--accent-cyan);
+      border-color: rgba(0, 242, 254, 0.3);
+    }
+
+    /* SENSOR VISUALIZER */
+    .sensor-visualizer {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      overflow-x: auto;
+    }
+
+    .sensor-bar {
+      display: grid;
+      grid-template-columns: repeat(16, minmax(30px, 1fr));
+      gap: 6px;
+      margin: 16px 0;
+      min-width: 680px;
+    }
+
+    .sensor-node {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .sensor-led {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 28px;
+      border-radius: 6px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.12s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    /* Trạng thái vạch Đen (LED phát sáng) */
+    .sensor-led.black {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border-color: #34d399;
+      color: #ffffff;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.8);
+      transform: translateY(-2px);
+    }
+
+    .sensor-idx {
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+    }
+
+    .sensor-adc {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      line-height: 1.25;
+      color: var(--text-muted);
+    }
+
+    .sensor-adc span {
+      display: flex;
+      justify-content: space-between;
+      gap: 2px;
+      white-space: nowrap;
+    }
+
+    .sensor-adc b {
+      color: #e2e8f0;
+      font-weight: 600;
+    }
+
+    .debug-metrics {
+      min-width: 680px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+
+    .debug-metric {
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.035);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .debug-metric span {
+      font-size: 10px;
+      line-height: 1.3;
+      color: var(--text-muted);
+    }
+
+    .debug-metric strong {
+      overflow-wrap: anywhere;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--accent-cyan);
+    }
+
+    .debug-metric small {
+      font-size: 9px;
+      color: var(--text-muted);
+    }
+
+    .line-indicator-preview {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* CALIBRATION WIZARD */
+    .calib-wizard {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .calib-steps {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .btn-calib {
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.04);
+      color: #f8fafc;
+      text-align: left;
+    }
+
+    .btn-calib strong {
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-calib small {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .btn-calib-white:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: #ffffff;
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-calib-black:hover {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: var(--accent-emerald);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+    }
+
+    .calib-extra-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-action-sm {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-action-sm:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+    }
+
+    /* TERMINAL CONSOLE */
+    .terminal-card {
+      grid-column: 1 / -1;
+      background: #090d16;
+      border-radius: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .terminal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .terminal-logs {
+      height: 120px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #38bdf8;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-line {
+      line-height: 1.4;
+      word-break: break-all;
+    }
+
+    .log-line.tx {
+      color: #a78bfa;
+    }
+
+    .log-line.rx {
+      color: #34d399;
+    }
+
+    .log-line.err {
+      color: #f87171;
+    }
+
+    .terminal-input-bar {
+      display: flex;
+      gap: 10px;
+    }
+
+    .terminal-input-bar input {
+      flex: 1;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      color: #f8fafc;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .terminal-input-bar input:focus {
+      border-color: var(--accent-cyan);
+    }
+
+    .btn-send {
+      padding: 8px 18px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      color: #061122;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* Keyboard hint */
+    .key-hint {
+      display: inline-block;
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      margin-left: 4px;
+    }
+
+    /* ULTRA-GRIP HERO BUTTON */
+    .btn-ultra-grip {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(239, 68, 68, 0.22) 50%, rgba(139, 92, 246, 0.22) 100%);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.25), inset 0 0 15px rgba(255, 255, 255, 0.05);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      text-align: left;
+    }
+
+    .btn-ultra-grip:hover {
+      transform: translateY(-2px) scale(1.01);
+      border-color: #f59e0b;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.35) 0%, rgba(239, 68, 68, 0.35) 50%, rgba(139, 92, 246, 0.35) 100%);
+      box-shadow: 0 0 35px rgba(245, 158, 11, 0.55), inset 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+
+    .btn-ultra-grip:active {
+      transform: scale(0.98);
+    }
+
+    .grip-icon {
+      font-size: 26px;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+      flex-shrink: 0;
+    }
+
+    .grip-text {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .grip-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .grip-badge {
+      font-size: 10px;
+      padding: 2px 7px;
+      background: #ef4444;
+      color: #fff;
+      border-radius: 999px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+      animation: pulseGrip 1.8s infinite;
+    }
+
+    @keyframes pulseGrip {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+
+    .grip-sub {
+      font-size: 11px;
+      color: #cbd5e1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* PRESET PROFILES ROW */
+    .profile-chips {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .chip-btn {
+      padding: 8px 4px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #cbd5e1;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .chip-btn span:first-child {
+      font-size: 14px;
+    }
+
+    .chip-btn:hover {
+      background: rgba(0, 242, 254, 0.12);
+      border-color: var(--accent-cyan);
+      color: #fff;
+      transform: translateY(-2px);
+    }
+
+    .chip-btn.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(239, 68, 68, 0.25));
+      border-color: #f59e0b;
+      color: #fbbf24;
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.3);
+    }
+
+    /* PID TUNER MINI CARD */
+    .pid-tuner-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pid-tuner-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .pid-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .pid-input-group label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pid-input-group input {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      padding: 6px 4px;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      outline: none;
+      text-align: center;
+    }
+
+    .pid-input-group input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+    }
+
+    .btn-apply-pid {
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+      border: none;
+      color: #061122;
+      font-weight: 700;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-apply-pid:hover {
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.5);
+      transform: translateY(-1px);
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🏎️</div>
+      <div class="brand-title">
+        <h1>ESP32 LINE ROBOT</h1>
+        <p>Bảng điều khiển Web Bluetooth & Serial (16 Mắt Cảm Biến + Động Cơ)</p>
+      </div>
+    </div>
+
+    <div class="connection-bar">
+      <div class="status-badge" id="statusBadge">
+        <span class="status-dot"></span>
+        <span id="statusText">Chưa kết nối</span>
+      </div>
+
+      <!-- Nút kết nối Bluetooth không dây -->
+      <button class="btn-connect btn-ble" id="btnConnectBle" onclick="toggleBleConnection()">
+        <span>📡 Kết nối Bluetooth</span>
+      </button>
+
+      <!-- Nút kết nối qua cáp USB Serial nếu cắm máy tính -->
+      <button class="btn-connect btn-serial" id="btnConnectSerial" onclick="toggleSerialConnection()">
+        <span>🔌 Cáp USB Serial</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- DASHBOARD GRID -->
+  <div class="dashboard-grid">
+
+    <!-- CỘT TRÁI: ĐIỀU KHIỂN ĐỘNG CƠ -->
+    <div class="card">
+      <div class="card-title">
+        <span>🎮 ĐIỀU KHIỂN ĐỘNG CƠ</span>
+        <small style="font-weight: 400; color: var(--text-muted);">
+          Phím: <span class="key-hint">W</span> <span class="key-hint">A</span> <span class="key-hint">S</span>
+          <span class="key-hint">D</span> | Siêu Bám: <span class="key-hint">G</span> | Dừng: <span
+            class="key-hint">Space</span>
+        </small>
+      </div>
+
+      <!-- AUTO PID MODE PANEL -->
+      <div
+        style="background: rgba(0, 242, 254, 0.06); border: 1px solid rgba(0, 242, 254, 0.2); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 600; font-size: 13px; color: var(--accent-cyan);">🤖 CHẾ ĐỘ DÒ LINE TỰ ĐỘNG</span>
+          <span id="pidModeBadge"
+            style="font-size: 11px; padding: 3px 10px; border-radius: 999px; background: rgba(148, 163, 184, 0.2); color: #94a3b8; font-weight: 600;">LÁI
+            TAY (MANUAL)</span>
+        </div>
+
+        <!-- HERO BUTTON: SIÊU BÁM SÀN (PIN 3S) - BẬT AUTO LUÔN -->
+        <button class="btn-ultra-grip" id="btnUltraGrip" onclick="triggerUltraGrip()">
+          <div class="grip-icon">🏎️⚡</div>
+          <div class="grip-text">
+            <div class="grip-title">
+              <span>BẬT SIÊU BÁM SÀN (PIN 3S)</span>
+              <span class="grip-badge">AUTO CHẠY NGAY</span>
+            </div>
+            <div class="grip-sub">Base: 105 | Kp: 1.45 | Kd: 0 (Phím tắt: G)</div>
+          </div>
+        </button>
+
+        <div style="display: flex; gap: 10px;">
+          <button
+            style="flex: 1; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 13px; border: none; cursor: pointer; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);"
+            onclick="sendCommand('A')">
+            🚀 BẬT AUTO (A)
+          </button>
+          <button
+            style="flex: 1; padding: 10px; border-radius: 10px; font-weight: 700; font-size: 13px; border: 1px solid rgba(244, 63, 94, 0.4); cursor: pointer; background: rgba(244, 63, 94, 0.15); color: #fda4af;"
+            onclick="sendCommand('M')">
+            🛑 TẮT AUTO (M)
+          </button>
+        </div>
+
+        <!-- CHỌN NHANH PROFILE CÀI SẴN -->
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted);">
+            <span>Profiles tốc độ:</span>
+            <span id="activeProfileLabel" style="color: #fbbf24; font-weight: 600;">Mặc định PID</span>
+          </div>
+          <div class="profile-chips">
+            <button class="chip-btn" id="chipGrip" onclick="selectProfile('GRIP')">
+              <span>🔥</span>
+              <span>Siêu Bám (105)</span>
+            </button>
+            <button class="chip-btn" id="chip3S" onclick="selectProfile('3S')">
+              <span>🛡️</span>
+              <span>Pin 3S (115)</span>
+            </button>
+            <button class="chip-btn" id="chip2S" onclick="selectProfile('2S')">
+              <span>🔋</span>
+              <span>Pin 2S (145)</span>
+            </button>
+            <button class="chip-btn" id="chipRace" onclick="selectProfile('RACE')">
+              <span>🏁</span>
+              <span>Race 10s (135)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TINH CHỈNH PID TRỰC TIẾP TRÊN WEB -->
+        <div class="pid-tuner-card">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 600; color: #cbd5e1;">🛠️ TINH CHỈNH PID & BASE SPEED</span>
+            <button class="btn-action-sm" style="padding: 2px 8px; font-size: 10px;" onclick="sendCommand('PID')">Đọc lại PID</button>
+          </div>
+          <div class="pid-tuner-grid">
+            <div class="pid-input-group">
+              <label>Kp (Nhạy)</label>
+              <input type="number" id="inputKp" min="0" max="50" step="0.05" value="2.2">
+            </div>
+            <div class="pid-input-group">
+              <label>Ki</label>
+              <input type="number" id="inputKi" min="0" max="50" step="0.01" value="0">
+            </div>
+            <div class="pid-input-group">
+              <label>Kd (Dập lắc)</label>
+              <input type="number" id="inputKd" min="0" max="50" step="0.01" value="0">
+            </div>
+            <div class="pid-input-group">
+              <label>Speed / Base</label>
+              <input type="number" id="inputBase" min="0" max="255" step="5" value="120">
+            </div>
+          </div>
+          <button class="btn-apply-pid" onclick="applyCustomPid()">⚡ ÁP DỤNG THÔNG SỐ PID</button>
+        </div>
+
+        <div
+          style="font-size: 12px; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.25); padding: 6px 10px; border-radius: 8px;">
+          <span>Trường hợp hiện tại:</span>
+          <span id="currentCaseDisplay" style="font-family: 'JetBrains Mono'; font-weight: 700; color: #38bdf8;">Dừng
+            xe</span>
+        </div>
+      </div>
+
+      <!-- D-PAD -->
+      <div class="dpad-container">
+        <div class="dpad-row">
+          <button class="dpad-btn" id="btnForward" onmousedown="sendCommand('F')" onmouseup="sendCommand('S')"
+            ontouchstart="event.preventDefault(); sendCommand('F')"
+            ontouchend="event.preventDefault(); sendCommand('S')">
+            ▲<small>TIẾN (W)</small>
+          </button>
+        </div>
+        <div class="dpad-row">
+          <button class="dpad-btn" id="btnLeft" onmousedown="sendCommand('L')" onmouseup="sendCommand('S')"
+            ontouchstart="event.preventDefault(); sendCommand('L')"
+            ontouchend="event.preventDefault(); sendCommand('S')">
+            ◄<small>TRÁI (A)</small>
+          </button>
+          <button class="dpad-btn dpad-stop" id="btnStop" onclick="sendCommand('S')">
+            ■<small>DỪNG</small>
+          </button>
+          <button class="dpad-btn" id="btnRight" onmousedown="sendCommand('R')" onmouseup="sendCommand('S')"
+            ontouchstart="event.preventDefault(); sendCommand('R')"
+            ontouchend="event.preventDefault(); sendCommand('S')">
+            ►<small>PHẢI (D)</small>
+          </button>
+        </div>
+        <div class="dpad-row">
+          <button class="dpad-btn" id="btnBackward" onmousedown="sendCommand('B')" onmouseup="sendCommand('S')"
+            ontouchstart="event.preventDefault(); sendCommand('B')"
+            ontouchend="event.preventDefault(); sendCommand('S')">
+            ▼<small>LÙI (S)</small>
+          </button>
+        </div>
+      </div>
+
+      <!-- SPEED CONTROL -->
+      <div class="speed-box">
+        <div class="speed-header">
+          <span>⚡ Tốc độ PWM (Manual / Base Auto):</span>
+          <span class="speed-val" id="speedDisplay">120 / 255</span>
+        </div>
+        <input type="range" id="speedSlider" min="0" max="255" value="120" oninput="updateSpeed(this.value)">
+        <div class="speed-presets">
+          <button class="btn-preset" onclick="setPresetSpeed(60)">Chậm (60)</button>
+          <button class="btn-preset" onclick="setPresetSpeed(120)">Vừa (120)</button>
+          <button class="btn-preset" onclick="setPresetSpeed(180)">Nhanh (180)</button>
+          <button class="btn-preset" onclick="setPresetSpeed(255)">Tối đa (255)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CỘT PHẢI: HIỆU CHUẨN CẢM BIẾN & HIỂN THỊ 16 MẮT -->
+    <div class="card">
+      <div class="card-title">
+        <span>👁️ CẢM BIẾN DÒ LINE (16 MẮT CD74HC4067)</span>
+        <span id="calibStatusBadge"
+          style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.2); color: #fbbf24;">
+          Chưa Calib
+        </span>
+      </div>
+
+      <!-- THANH HIỂN THỊ 16 MẮT -->
+      <div class="sensor-visualizer">
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
+          <span>Trạng thái 16 mắt (Xanh: Vạch Đen, Xám: Nền Trắng):</span>
+          <span id="sensorBinaryStr"
+            style="font-family: 'JetBrains Mono'; color: var(--accent-cyan);">0000000000000000</span>
+        </div>
+
+        <div class="sensor-bar" id="sensorBar">
+          <!-- 16 Mắt tự sinh bằng JavaScript -->
+        </div>
+
+        <div class="debug-metrics" aria-label="Thong so debug truc tiep">
+          <div class="debug-metric">
+            <span>PWM dong co trai</span>
+            <strong id="debugPwmLeft">—</strong>
+            <small>−255 đến 255</small>
+          </div>
+          <div class="debug-metric">
+            <span>PWM dong co phai</span>
+            <strong id="debugPwmRight">—</strong>
+            <small>−255 đến 255</small>
+          </div>
+          <div class="debug-metric">
+            <span>Xung encoder trai</span>
+            <strong id="debugEncoderLeft">—</strong>
+            <small>Dem tich luy</small>
+          </div>
+          <div class="debug-metric">
+            <span>Xung encoder phai</span>
+            <strong id="debugEncoderRight">—</strong>
+            <small>Dem tich luy</small>
+          </div>
+        </div>
+
+        <div class="line-indicator-preview">
+          <span>◄ Mắt 0 (Trái ngoài cùng)</span>
+          <span>Trung tâm (Mắt 7-8)</span>
+          <span>Mắt 15 (Phải ngoài cùng) ►</span>
+        </div>
+      </div>
+
+      <!-- BƯỚC CALIBRATION -->
+      <div class="calib-wizard">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-size: 13px; font-weight: 600; color: #cbd5e1;">🎯 Hiệu chuẩn bằng cách LIA CẢM BIẾN (Sweep
+            Calibration):</span>
+        </div>
+        <div
+          style="font-size: 12px; color: var(--text-muted); background: rgba(0,0,0,0.25); padding: 10px 14px; border-radius: 10px; line-height: 1.5; border: 1px solid rgba(255,255,255,0.05);">
+          👉 <b>Cách làm:</b> Bấm nút dưới đây rồi <b>dùng tay lia thanh cảm biến qua lại ngang qua vạch đen 2 - 3
+            lần</b> trong 4 giây. Hệ thống sẽ tự bắt Min (trắng) và Max (đen) rồi tính ngưỡng trung bình cho từng mắt
+          (từ mắt 1 đến 14)!
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+          <button
+            style="flex: 2; padding: 14px; border-radius: 12px; border: none; cursor: pointer; background: linear-gradient(135deg, #00f2fe, #4facfe); color: #061122; font-weight: 700; font-size: 14px; box-shadow: 0 0 15px rgba(0, 242, 254, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px;"
+            onclick="sendCommand('C')">
+            <span>🎯 BẮT ĐẦU LIA CALIB (4 Giây)</span>
+          </button>
+          <button
+            style="flex: 1; padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; background: rgba(255,255,255,0.06); color: #e2e8f0; font-weight: 600; font-size: 13px;"
+            onclick="sendCommand('K')">
+            ⏹️ Chốt Sớm
+          </button>
+        </div>
+
+        <div class="calib-extra-actions">
+          <button class="btn-action-sm" onclick="sendCommand('P')">
+            📊 Đọc mắt (P)
+          </button>
+          <button class="btn-action-sm" onclick="sendCommand('INV')">
+            🔄 Đảo Cực (INV)
+          </button>
+          <button class="btn-action-sm" id="btnAutoPoll" onclick="toggleAutoPoll()">
+            ⚡ Tự quét: BẬT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HÀNG DƯỚI: TERMINAL CONSOLE -->
+    <div class="terminal-card">
+      <div class="terminal-header">
+        <span>💻 LOG GIAO TIẾP VỚI ESP32</span>
+        <button onclick="clearTerminal()"
+          style="background: none; border: none; color: #64748b; font-size: 11px; cursor: pointer;">
+          Xóa màn hình log
+        </button>
+      </div>
+
+      <div class="terminal-logs" id="terminalLogs">
+        <div class="log-line rx">Hệ thống đã sẵn sàng. Hãy bấm "Kết nối Bluetooth" hoặc "Cáp USB Serial" để bắt đầu!
+        </div>
+      </div>
+
+      <div class="terminal-input-bar">
+        <input type="text" id="customCmdInput" placeholder="Nhập lệnh thủ công (ví dụ: F, B, W, K, V:220)..."
+          onkeydown="if(event.key==='Enter') sendCustomCommand()">
+        <button class="btn-send" onclick="sendCustomCommand()">Gửi Lệnh</button>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // =================== CẤU HÌNH BLE NORDIC UART ===================
+    const NORDIC_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+    const RX_CHAR_UUID = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
+    const TX_CHAR_UUID = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
+
+    let bleDevice = null;
+    let bleServer = null;
+    let rxCharacteristic = null;
+    let txCharacteristic = null;
+
+    // Web Serial
+    let serialPort = null;
+    let serialWriter = null;
+    let serialReader = null;
+    let isConnected = false;
+    let connectionType = null; // 'ble' hoặc 'serial'
+
+    let autoPollInterval = null;
+    let autoPollActive = true;
+
+    // Khởi tạo giao diện 16 mắt cảm biến
+    const sensorBar = document.getElementById('sensorBar');
+    for (let i = 0; i < 16; i++) {
+      const node = document.createElement('div');
+      node.className = 'sensor-node';
+      node.innerHTML = `
+        <div class="sensor-led" id="led_${i}">0</div>
+        <span class="sensor-idx">${i}</span>
+        <div class="sensor-adc">
+          <span title="ADC tho">R:<b id="adcRaw_${i}">—</b></span>
+          <span title="ADC sau hieu chuan">C:<b id="adcCal_${i}">—</b></span>
+        </div>
+      `;
+      sensorBar.appendChild(node);
+    }
+
+    // =================== LOGGING & UI ===================
+    function log(message, type = '') {
+      const logs = document.getElementById('terminalLogs');
+      const line = document.createElement('div');
+      line.className = `log-line ${type}`;
+      const time = new Date().toLocaleTimeString();
+      line.textContent = `[${time}] ${message}`;
+      logs.appendChild(line);
+      logs.scrollTop = logs.scrollHeight;
+    }
+
+    function clearTerminal() {
+      document.getElementById('terminalLogs').innerHTML = '';
+    }
+
+    function updateConnectionStatus(connected, typeName = '') {
+      isConnected = connected;
+      const badge = document.getElementById('statusBadge');
+      const text = document.getElementById('statusText');
+      const btnBle = document.getElementById('btnConnectBle');
+      const btnSerial = document.getElementById('btnConnectSerial');
+
+      if (connected) {
+        badge.classList.add('connected');
+        text.textContent = `Đã kết nối qua ${typeName}`;
+        if (connectionType === 'ble') {
+          btnBle.innerHTML = '<span>❌ Ngắt Bluetooth</span>';
+        } else {
+          btnSerial.innerHTML = '<span>❌ Ngắt USB</span>';
+        }
+        startAutoPoll();
+      } else {
+        badge.classList.remove('connected');
+        text.textContent = 'Chưa kết nối';
+        btnBle.innerHTML = '<span>📡 Kết nối Bluetooth</span>';
+        btnSerial.innerHTML = '<span>🔌 Cáp USB Serial</span>';
+        connectionType = null;
+        stopAutoPoll();
+        const autoPollButton = document.getElementById('btnAutoPoll');
+        if (autoPollButton) {
+          autoPollButton.disabled = false;
+          autoPollButton.textContent = `⚡ Tự động quét: ${autoPollActive ? 'BẬT' : 'TẮT'}`;
+          autoPollButton.style.color = autoPollActive ? 'var(--accent-cyan)' : 'var(--text-muted)';
+        }
+      }
+    }
+
+    // =================== KẾT NỐI BLUETOOTH (BLE) ===================
+    async function toggleBleConnection() {
+      if (isConnected && connectionType === 'ble') {
+        disconnectBle();
+        return;
+      }
+
+      if (!navigator.bluetooth) {
+        alert('Trình duyệt của bạn chưa hỗ trợ Web Bluetooth API. Hãy sử dụng Google Chrome hoặc Microsoft Edge!');
+        return;
+      }
+
+      try {
+        log('Đang quét thiết bị Bluetooth...', 'rx');
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [
+            { namePrefix: 'ESP32' },
+            { services: [NORDIC_SERVICE_UUID] }
+          ],
+          optionalServices: [NORDIC_SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
+
+        log(`Đang kết nối tới ${bleDevice.name || 'ESP32'}...`, 'rx');
+        bleServer = await bleDevice.gatt.connect();
+
+        log('Đang tìm dịch vụ Nordic UART...', 'rx');
+        const service = await bleServer.getPrimaryService(NORDIC_SERVICE_UUID);
+
+        rxCharacteristic = await service.getCharacteristic(RX_CHAR_UUID);
+        txCharacteristic = await service.getCharacteristic(TX_CHAR_UUID);
+
+        // Bật notify nhận phản hồi từ ESP32
+        await txCharacteristic.startNotifications();
+        txCharacteristic.addEventListener('characteristicvaluechanged', (e) => {
+          handleBleNotification(e.target.value);
+        });
+
+        connectionType = 'ble';
+        updateConnectionStatus(true, 'Bluetooth (BLE)');
+        log('Kết nối Bluetooth THÀNH CÔNG!', 'rx');
+        await sendCommand('PID');
+      } catch (err) {
+        log(`Lỗi kết nối Bluetooth: ${err.message}`, 'err');
+        updateConnectionStatus(false);
+      }
+    }
+
+    function onBleDisconnected() {
+      log('Bluetooth bị ngắt kết nối!', 'err');
+      updateConnectionStatus(false);
+    }
+
+    function disconnectBle() {
+      if (bleDevice && bleDevice.gatt.connected) {
+        bleDevice.gatt.disconnect();
+      }
+      updateConnectionStatus(false);
+    }
+
+    // =================== KẾT NỐI USB SERIAL ===================
+    async function toggleSerialConnection() {
+      if (isConnected && connectionType === 'serial') {
+        disconnectSerial();
+        return;
+      }
+
+      if (!navigator.serial) {
+        alert('Trình duyệt chưa hỗ trợ Web Serial. Hãy dùng Chrome hoặc Edge trên máy tính!');
+        return;
+      }
+
+      try {
+        serialPort = await navigator.serial.requestPort();
+        await serialPort.open({ baudRate: 115200 });
+
+        serialWriter = serialPort.writable.getWriter();
+        connectionType = 'serial';
+        updateConnectionStatus(true, 'USB Serial (115200)');
+        log('Đã mở cổng USB Serial thành công!', 'rx');
+
+        readSerialLoop();
+        await sendCommand('PID');
+      } catch (err) {
+        log(`Lỗi cổng Serial: ${err.message}`, 'err');
+        updateConnectionStatus(false);
+      }
+    }
+
+    async function readSerialLoop() {
+      const textDecoder = new TextDecoderStream();
+      const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
+      serialReader = textDecoder.readable.getReader();
+
+      let lineBuffer = '';
+      try {
+        while (true) {
+          const { value, done } = await serialReader.read();
+          if (done) break;
+          lineBuffer += value;
+          const lines = lineBuffer.split('\n');
+          lineBuffer = lines.pop(); // giữ lại phần chưa đủ dòng
+          for (const line of lines) {
+            handleIncomingData(line.trim());
+          }
+        }
+      } catch (err) {
+        log(`Mất kết nối Serial: ${err.message}`, 'err');
+      } finally {
+        updateConnectionStatus(false);
+      }
+    }
+
+    async function disconnectSerial() {
+      try {
+        if (serialReader) await serialReader.cancel();
+        if (serialWriter) await serialWriter.close();
+        if (serialPort) await serialPort.close();
+      } catch (e) { }
+      updateConnectionStatus(false);
+    }
+
+    // =================== GỬI & NHẬN LỆNH ===================
+    async function sendCommand(cmd) {
+      if (!isConnected) {
+        log(`Chưa kết nối! Không thể gửi: "${cmd}"`, 'err');
+        return false;
+      }
+
+      try {
+        log(`TX -> ${cmd}`, 'tx');
+        const data = new TextEncoder().encode(cmd + '\n');
+
+        if (connectionType === 'ble' && rxCharacteristic) {
+          await rxCharacteristic.writeValueWithoutResponse(data);
+        } else if (connectionType === 'serial' && serialWriter) {
+          await serialWriter.write(data);
+        } else {
+          throw new Error('Kênh kết nối chưa sẵn sàng');
+        }
+        return true;
+      } catch (err) {
+        log(`Lỗi gửi lệnh: ${err.message}`, 'err');
+        return false;
+      }
+    }
+
+    // Binary debug notification: [0xA7, sequence, fragmentIndex, payload...].
+    // The ESP32 sends 4 fragments; update the UI only after a complete snapshot.
+    let debugAssembly = null;
+
+    function handleBleNotification(value) {
+      if (value && value.byteLength > 0 && value.getUint8(0) === 0xA7) {
+        handleDebugFragment(value);
+        return;
+      }
+      handleIncomingData(new TextDecoder().decode(value));
+    }
+
+    function handleDebugFragment(frame) {
+      if (frame.byteLength < 4) return;
+      const sequence = frame.getUint8(1);
+      const fragmentIndex = frame.getUint8(2);
+      if (fragmentIndex >= 4) return;
+      const expectedPayloadLength = fragmentIndex === 3 ? 8 : 16;
+      if (frame.byteLength !== expectedPayloadLength + 3) return;
+
+      if (!debugAssembly || debugAssembly.sequence !== sequence) {
+        debugAssembly = { sequence, fragments: new Array(4).fill(null) };
+      }
+      const fragment = new Uint8Array(expectedPayloadLength);
+      for (let i = 0; i < expectedPayloadLength; i++) fragment[i] = frame.getUint8(i + 3);
+      debugAssembly.fragments[fragmentIndex] = fragment;
+      if (debugAssembly.fragments.some(part => part === null)) return;
+
+      const payload = new Uint8Array(56);
+      for (let i = 0; i < 4; i++) payload.set(debugAssembly.fragments[i], i * 16);
+      debugAssembly = null;
+      renderDebugTelemetry(payload);
+    }
+
+    // Read LSB-first packed unsigned fields.
+    function readPackedUnsigned(bytes, startBit, bitCount) {
+      let value = 0;
+      for (let bit = 0; bit < bitCount; bit++) {
+        const absoluteBit = startBit + bit;
+        value |= ((bytes[absoluteBit >>> 3] >>> (absoluteBit & 7)) & 1) << bit;
+      }
+      return value >>> 0;
+    }
+
+    function renderDebugTelemetry(payload) {
+      if (payload.length !== 56) return;
+      const view = new DataView(payload.buffer, payload.byteOffset, payload.byteLength);
+      const leftPwm = view.getInt16(0, true);
+      const rightPwm = view.getInt16(2, true);
+      const leftEncoder = view.getUint32(4, true);
+      const rightEncoder = view.getUint32(8, true);
+      const rawValues = [];
+      const calibratedValues = [];
+
+      for (let i = 0; i < 16; i++) {
+        rawValues.push(readPackedUnsigned(payload, 12 * 8 + i * 12, 12));
+        calibratedValues.push(readPackedUnsigned(payload, 36 * 8 + i * 10, 10));
+      }
+
+      updateSensorLeds(calibratedValues.map(value => value >= 500 ? '1' : '0').join(''));
+      for (let i = 0; i < 16; i++) {
+        const rawElement = document.getElementById(`adcRaw_${i}`);
+        const calibratedElement = document.getElementById(`adcCal_${i}`);
+        if (rawElement) rawElement.textContent = String(rawValues[i]);
+        if (calibratedElement) calibratedElement.textContent = String(calibratedValues[i]);
+      }
+
+      document.getElementById('debugPwmLeft').textContent = String(leftPwm);
+      document.getElementById('debugPwmRight').textContent = String(rightPwm);
+      document.getElementById('debugEncoderLeft').textContent = leftEncoder.toLocaleString();
+      document.getElementById('debugEncoderRight').textContent = rightEncoder.toLocaleString();
+    }
+
+    function handleIncomingData(raw) {
+      log(`RX <- ${raw}`, 'rx');
+
+      // 1. Nhận chuỗi trạng thái 16 mắt cảm biến: "SENSORS: 0000001100000000"
+      if (raw.includes('SENSORS:')) {
+        const match = raw.match(/SENSORS:\s*([01]{16})/);
+        if (match && match[1]) {
+          updateSensorLeds(match[1]);
+        }
+      } else if (raw.match(/^[01 ]{31,32}$/)) { // Dạng in chuỗi cách nhau dấu cách: "0 0 1 1 ..."
+        const clean = raw.replace(/\s+/g, '');
+        if (clean.length === 16) {
+          updateSensorLeds(clean);
+        }
+      }
+
+      // 2. Nhận thông báo hiệu chuẩn cảm biến (Sweep Calibration)
+      if (raw.includes('BAT DAU LIA')) {
+        const badge = document.getElementById('calibStatusBadge');
+        if (badge) {
+          badge.textContent = '⏳ Đang Lia Calib...';
+          badge.style.background = 'rgba(59, 130, 246, 0.2)';
+          badge.style.color = '#60a5fa';
+        }
+      } else if (raw.includes('CALIB THANH CONG') || raw.includes('Hieu chuan xong')) {
+        const badge = document.getElementById('calibStatusBadge');
+        if (badge) {
+          badge.textContent = '✅ Đã Hiệu Chuẩn';
+          badge.style.background = 'rgba(16, 185, 129, 0.2)';
+          badge.style.color = '#34d399';
+        }
+      } else if (raw.includes('CALIB CHUA DAT')) {
+        const badge = document.getElementById('calibStatusBadge');
+        if (badge) {
+          badge.textContent = '⚠️ Chưa Đạt (Lia Lại)';
+          badge.style.background = 'rgba(239, 68, 68, 0.2)';
+          badge.style.color = '#f87171';
+        }
+      }
+      // 3. Nhận trạng thái Case PID từ USB Serial: "[CASE 1: Bam Line PID] Err: 2.5 | Corr: ..."
+      if (raw.includes('[CASE')) {
+        const caseMatch = raw.match(/\[(CASE[^\]]+)\]/);
+        if (caseMatch && caseMatch[1]) {
+          document.getElementById('currentCaseDisplay').textContent = caseMatch[1];
+          const badge = document.getElementById('pidModeBadge');
+          badge.textContent = 'DÒ LINE (AUTO)';
+          badge.style.background = 'rgba(16, 185, 129, 0.2)';
+          badge.style.color = '#34d399';
+        }
+      }
+
+      // 4. Nhận trạng thái PWM Telemetry từ BLE: "PWM: L=120 R=100 | Err=2.5 | Case=CASE 1: Bam Line PID"
+      if (raw.includes('PWM:')) {
+        const pwmMatch = raw.match(/PWM:\s*L=(-?\d+)\s+R=(-?\d+)\s*\|\s*Err=(-?[\d\.]+)(?:\s*\|\s*Case=([^|\r\n]+))?/);
+        if (pwmMatch) {
+          const leftPwm = pwmMatch[1];
+          const rightPwm = pwmMatch[2];
+          const errVal = pwmMatch[3];
+          const caseName = pwmMatch[4];
+
+          if (caseName) {
+            document.getElementById('currentCaseDisplay').textContent = `${caseName.trim()} [Err: ${errVal}]`;
+            const badge = document.getElementById('pidModeBadge');
+            badge.textContent = 'DÒ LINE (AUTO)';
+            badge.style.background = 'rgba(16, 185, 129, 0.2)';
+            badge.style.color = '#34d399';
+          }
+        }
+      }
+
+      // 5. Nhận thông báo đổi cực tính cảm biến
+      if (raw.includes('POLARITY:')) {
+        log(`Đã cập nhật cực tính: ${raw}`, 'rx');
+      }
+
+      // 6. Nhận thông báo chuyển chế độ Auto / Manual / Siêu Bám
+      if (raw.includes('SIEU BAM') || raw.includes('ULTRA-GRIP')) {
+        const badge = document.getElementById('pidModeBadge');
+        badge.textContent = 'SIÊU BÁM (AUTO ON)';
+        badge.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(239, 68, 68, 0.3))';
+        badge.style.color = '#fbbf24';
+        badge.style.border = '1px solid #f59e0b';
+        document.getElementById('currentCaseDisplay').textContent = 'Đang chạy Siêu Bám (Pin 3S)...';
+        setActiveProfileChip('chipGrip', '🔥 Siêu Bám Pin 3S');
+      } else if (raw.includes('MODE: BAT CHAY TU DONG') || raw.includes('BAT AUTO')) {
+        const badge = document.getElementById('pidModeBadge');
+        badge.textContent = 'DÒ LINE (AUTO)';
+        badge.style.background = 'rgba(16, 185, 129, 0.2)';
+        badge.style.color = '#34d399';
+        badge.style.border = 'none';
+        document.getElementById('currentCaseDisplay').textContent = 'Đang bám line...';
+      } else if (raw.includes('MODE: CHUYEN SANG LAI TAY') || raw.includes('MOTOR: STOP')) {
+        const badge = document.getElementById('pidModeBadge');
+        badge.textContent = 'LÁI TAY (MANUAL)';
+        badge.style.background = 'rgba(148, 163, 184, 0.2)';
+        badge.style.color = '#94a3b8';
+        badge.style.border = 'none';
+        document.getElementById('currentCaseDisplay').textContent = 'Dừng xe';
+      }
+
+      // 7. Nhận phản hồi thông số PID từ ESP32: "PID: Kp=2.20 Ki=0.00 Kd=0.00 Base=120"
+      if (raw.includes('PID:') || raw.includes('PID SET:')) {
+        const kpMatch = raw.match(/Kp=([\d\.]+)/i);
+        const kiMatch = raw.match(/Ki=([\d\.]+)/i);
+        const kdMatch = raw.match(/Kd=([\d\.]+)/i);
+        const baseMatch = raw.match(/(?:Base|baseSpeed)=(\d+)/i);
+        if (kpMatch && document.getElementById('inputKp')) document.getElementById('inputKp').value = kpMatch[1];
+        if (kiMatch && document.getElementById('inputKi')) document.getElementById('inputKi').value = kiMatch[1];
+        if (kdMatch && document.getElementById('inputKd')) document.getElementById('inputKd').value = kdMatch[1];
+        if (baseMatch) {
+          document.getElementById('inputBase').value = baseMatch[1];
+          document.getElementById('speedSlider').value = baseMatch[1];
+          document.getElementById('speedDisplay').textContent = `${baseMatch[1]} / 255`;
+        }
+      }
+
+      const speedMatch = raw.match(/SPEED SET:\s*(\d+)/i);
+      if (speedMatch) {
+        const speed = speedMatch[1];
+        document.getElementById('inputBase').value = speed;
+        document.getElementById('speedSlider').value = speed;
+        document.getElementById('speedDisplay').textContent = `${speed} / 255`;
+      }
+    }
+
+    function updateSensorLeds(binaryStr) {
+      document.getElementById('sensorBinaryStr').textContent = binaryStr;
+      for (let i = 0; i < 16; i++) {
+        const led = document.getElementById(`led_${i}`);
+        if (!led) continue;
+        const isBlack = binaryStr[i] === '1';
+        if (isBlack) {
+          led.classList.add('black');
+          led.textContent = '1';
+        } else {
+          led.classList.remove('black');
+          led.textContent = '0';
+        }
+      }
+    }
+
+    // =================== TỐC ĐỘ (SPEED) ===================
+    let speedDebounce = null;
+    function updateSpeed(val) {
+      document.getElementById('speedDisplay').textContent = `${val} / 255`;
+      clearTimeout(speedDebounce);
+      speedDebounce = setTimeout(() => {
+        sendCommand(`V:${val}`);
+      }, 150);
+    }
+
+    function setPresetSpeed(val) {
+      document.getElementById('speedSlider').value = val;
+      updateSpeed(val);
+    }
+
+    // =================== ĐIỀU KHIỂN BẰNG BÀN PHÍM ===================
+    const activeKeys = {};
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT') return; // Không can thiệp khi đang gõ text
+      const key = e.key.toUpperCase();
+      if (activeKeys[key]) return; // Đã bấm giữ, tránh spam
+      activeKeys[key] = true;
+
+      if (key === 'W' || key === 'ARROWUP') {
+        highlightBtn('btnForward', true);
+        sendCommand('F');
+      } else if (key === 'S' || key === 'ARROWDOWN') {
+        highlightBtn('btnBackward', true);
+        sendCommand('B');
+      } else if (key === 'A' || key === 'ARROWLEFT') {
+        highlightBtn('btnLeft', true);
+        sendCommand('L');
+      } else if (key === 'D' || key === 'ARROWRIGHT') {
+        highlightBtn('btnRight', true);
+        sendCommand('R');
+      } else if (key === 'G') {
+        triggerUltraGrip();
+      } else if (key === ' ' || key === 'ESCAPE') {
+        highlightBtn('btnStop', true);
+        sendCommand('S');
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.target.tagName === 'INPUT') return;
+      const key = e.key.toUpperCase();
+      delete activeKeys[key];
+
+      if (['W', 'S', 'A', 'D', 'ARROWUP', 'ARROWDOWN', 'ARROWLEFT', 'ARROWRIGHT'].includes(key)) {
+        highlightBtn('btnForward', false);
+        highlightBtn('btnBackward', false);
+        highlightBtn('btnLeft', false);
+        highlightBtn('btnRight', false);
+        highlightBtn('btnStop', false);
+        sendCommand('S'); // Tự động dừng khi nhả phím để an toàn
+      }
+    });
+
+    function highlightBtn(id, active) {
+      const btn = document.getElementById(id);
+      if (btn) {
+        if (active) btn.classList.add('active');
+        else btn.classList.remove('active');
+      }
+    }
+
+    // =================== TỰ ĐỘNG QUÉT MẮT CẢM BIẾN (AUTO POLL) ===================
+    function startAutoPoll() {
+      stopAutoPoll();
+      const button = document.getElementById('btnAutoPoll');
+
+      // BLE telemetry is pushed by ESP32; polling with P adds redundant notifications.
+      if (connectionType === 'ble') {
+        if (button) {
+          button.textContent = '⚡ Debug BLE: ESP đẩy';
+          button.style.color = 'var(--accent-cyan)';
+          button.disabled = true;
+        }
+        return;
+      }
+
+      if (button) {
+        button.disabled = false;
+        button.textContent = `⚡ Tự động quét: ${autoPollActive ? 'BẬT' : 'TẮT'}`;
+        button.style.color = autoPollActive ? 'var(--accent-cyan)' : 'var(--text-muted)';
+      }
+      if (!autoPollActive || !isConnected || connectionType !== 'serial') return;
+      autoPollInterval = setInterval(() => {
+        if (isConnected && connectionType === 'serial') sendCommand('P');
+      }, 500);
+    }
+
+    function stopAutoPoll() {
+      if (autoPollInterval) {
+        clearInterval(autoPollInterval);
+        autoPollInterval = null;
+      }
+    }
+
+    function toggleAutoPoll() {
+      if (connectionType === 'ble') return; // BLE debug data is push-only.
+      autoPollActive = !autoPollActive;
+      startAutoPoll();
+    }
+
+    function sendCustomCommand() {
+      const input = document.getElementById('customCmdInput');
+      const val = input.value.trim();
+      if (val) {
+        sendCommand(val);
+        input.value = '';
+      }
+    }
+
+    // =================== CÁC HÀM XỬ LÝ SIÊU BÁM & PID ===================
+    function triggerUltraGrip() {
+      sendCommand('BAM');
+      setActiveProfileChip('chipGrip', '🔥 Siêu Bám Pin 3S');
+      document.getElementById('inputKp').value = '1.45';
+      document.getElementById('inputKd').value = '0.00';
+      document.getElementById('inputBase').value = '105';
+      
+      const badge = document.getElementById('pidModeBadge');
+      badge.textContent = 'SIÊU BÁM (AUTO ON)';
+      badge.style.background = 'linear-gradient(135deg, rgba(245, 158, 11, 0.3), rgba(239, 68, 68, 0.3))';
+      badge.style.color = '#fbbf24';
+      badge.style.border = '1px solid #f59e0b';
+      log('Đã kích hoạt SIÊU BÁM SÀN (PIN 3S) & BẬT AUTO CHẠY NGAY!', 'rx');
+    }
+
+    function selectProfile(type) {
+      if (type === 'GRIP') {
+        triggerUltraGrip();
+      } else if (type === '3S') {
+        sendCommand('3S');
+        setActiveProfileChip('chip3S', '🛡️ Pin 3S Chuẩn');
+        document.getElementById('inputKp').value = '1.55';
+        document.getElementById('inputKd').value = '0.00';
+        document.getElementById('inputBase').value = '115';
+      } else if (type === '2S') {
+        sendCommand('2S');
+        setActiveProfileChip('chip2S', '🔋 Pin 2S An Toàn');
+        document.getElementById('inputKp').value = '1.55';
+        document.getElementById('inputKd').value = '0.00';
+        document.getElementById('inputBase').value = '145';
+      } else if (type === 'RACE') {
+        sendCommand('STAGE2');
+        setActiveProfileChip('chipRace', '🏁 Race 10s');
+        document.getElementById('inputKp').value = '1.65';
+        document.getElementById('inputKd').value = '0.00';
+        document.getElementById('inputBase').value = '135';
+      }
+    }
+
+    function setActiveProfileChip(chipId, labelText) {
+      ['chipGrip', 'chip3S', 'chip2S', 'chipRace'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.remove('active');
+      });
+      const activeEl = document.getElementById(chipId);
+      if (activeEl) activeEl.classList.add('active');
+      const label = document.getElementById('activeProfileLabel');
+      if (label) label.textContent = labelText;
+    }
+
+    async function applyCustomPid() {
+      const kp = Number(document.getElementById('inputKp').value);
+      const ki = Number(document.getElementById('inputKi').value);
+      const kd = Number(document.getElementById('inputKd').value);
+      const base = Number(document.getElementById('inputBase').value);
+      if (!Number.isFinite(kp) || kp < 0 || kp > 50 ||
+          !Number.isFinite(ki) || ki < 0 || ki > 50 ||
+          !Number.isFinite(kd) || kd < 0 || kd > 50 ||
+          !Number.isInteger(base) || base < 0 || base > 255) {
+        log('Thông số PID không hợp lệ.', 'err');
+        return;
+      }
+
+      const commands = [
+        `KP:${kp.toFixed(2)}`,
+        `KI:${ki.toFixed(2)}`,
+        `KD:${kd.toFixed(2)}`,
+        `BASE:${base}`
+      ];
+      for (const command of commands) {
+        if (!await sendCommand(command)) return;
+      }
+      log(`Đã gửi cấu hình PID: Kp=${kp}, Ki=${ki}, Kd=${kd}, Base=${base}`, 'tx');
+    }
+  </script>
+</body>
+
+</html>

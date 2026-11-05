@@ -1,101 +1,186 @@
-# HIGH-SPEED BLE | Line Following Robot
+# ESP32 16-Sensor High-Speed Line Follower Robot (PID + Bluetooth Classic Debug)
 
-Bảng điều khiển và firmware ESP32 dành cho robot dò line tốc độ cao. Giao diện mang phong cách bàn kỹ thuật điện tử với nền trắng, điểm nhấn hồng hài hòa và họa tiết đường mạch PCB.
+Hệ thống điều khiển xe dò line tốc độ cao sử dụng vi điều khiển **ESP32**, thanh cảm biến quang trở hồng ngoại **16 mắt qua IC giải mã CD74HC4067**, thuật toán **PID phi tuyến kết hợp điều tốc động (Dynamic Speed Profiling)**, và giao diện giám sát/điều khiển qua **Bluetooth Classic SPP với robot_debug.py** trên nhánh `mainv4`.
 
-## Website điều khiển
+---
 
-### [🌐 Mở giao diện HIGH-SPEED BLE ](https://phanyennhi1412-blip.github.io/Line-following-robot/)
+## 📌 Mục lục
+1. [Tính năng nổi bật](#-tính-năng-nổi-bật)
+2. [Cấu hình phần cứng & Sơ đồ chân (Pinout)](#-cấu-hình-phần-cứng--sơ-đồ-chân-pinout)
+3. [Kiến trúc Phần mềm & Cấu trúc Thư mục](#-kiến-trúc-phần-mềm--cấu-trúc-thư-mục)
+4. [Thuật toán Dò Line & Các Chế độ Đua](#-thuật-toán-dò-line--các-chế-độ-đua)
+5. [Tập lệnh điều khiển qua BLE / Serial Terminal](#-tập-lệnh-điều-khiển-qua-ble--serial-terminal)
+6. [Giao diện Web Dashboard (index.html)](#-giao-diện-web-dashboard-indexhtml)
+7. [Hướng dẫn cài đặt & Nạp code (PlatformIO)](#-hướng-dẫn-cài-đặt--nạp-code-platformio)
 
-Giao diện được lưu tại [`web/index.html`](web/index.html) và tự động xuất bản lên GitHub Pages khi cập nhật thư mục `web/` trên nhánh `main`. Sau khi push thay đổi, theo dõi workflow **Deploy BLE web to GitHub Pages** trong tab **Actions**; cần workflow chạy thành công để phiên bản mới xuất hiện tại link phía trên.
+---
 
-Link Pages giữ nguyên khi chỉ cập nhật thiết kế; sau khi workflow deploy thành công, chính link trên sẽ mở giao diện mới.
+## 🌟 Tính năng nổi bật
 
-Dùng Chrome hoặc Edge trên máy tính, mở trang qua **HTTPS** (GitHub Pages) hoặc `localhost`; không mở bằng `file://`. Trang hỗ trợ kết nối **Bluetooth LE** và **USB Serial**.
+- ⚡ **Chu kỳ lấy mẫu siêu tốc (~400Hz - 500Hz):** Phản xạ chỉ trong 2ms - 2.5ms, loại bỏ hoàn toàn hiện tượng trễ pha quán tính khi chạy tốc độ cao.
+- 🎯 **Thanh cảm biến 16 mắt chuẩn hóa Analog (0 - 1000):** Tính toán trọng tâm liên tục (*Smooth Centroid*) với độ mịn cao từ `-65.0` đến `+65.0`.
+- 🔄 **Hiệu chuẩn 2 bề mặt:** Lấy mẫu đồng thời 16 mắt lần lượt trên nền trắng và đen (128 khung mỗi nền), kiểm tra nhiễu/tương phản rồi lưu NVS với CRC32. Không dùng lia Min/Max nữa.
+- 🚀 **Bứt tốc đường thẳng & Tự hạ ga ôm cua (Dynamic Speed Curve):** Tự động bốc ga kịch trần (lên tới 215–255 PWM) khi đi thẳng và tự ghì ga xuống 95–115 PWM khi vào cua để bánh xe bám chặt mặt đường.
+- 🛡️ **Khâu vi phân $K_d$ có lọc thông thấp (Anti-Oscillation IIR):** Triệt tiêu hoàn toàn hiện tượng rung lắc li ti hoặc lắc đuôi cá ở tốc độ cao.
+- 📐 **Xử lý chuyên sâu Cua vuông 90° & Vạch đứt nét:** Phanh giật ngược chủ động (*Active Counter-Brake*) kết hợp quay tâm xe đón line tức thời.
+- **Giám sát bằng app Python Bluetooth Classic:** 16 ADC, 16 giá trị chuẩn hóa, ngưỡng White/Black riêng từng mắt, logic 0/1, PID, PWM và encoder; xuất TXT/CSV.
 
-## Chức năng chính
+---
 
-- **Kết nối BLE hoặc USB** với ESP32; USB Serial chạy ở `115200 baud`.
-- **Điều khiển thử động cơ** tiến, lùi, xoay trái/phải bằng nút trên trang hoặc bàn phím; có nút dừng khẩn cấp.
-- **Hiển thị trực quan đủ 16 mắt cảm biến** theo dãy một hàng, cùng giá trị analog, trạng thái line, vị trí và sai lệch.
-- **Hiệu chuẩn cảm biến** trên nền trắng, vạch đen hoặc bằng cách di chuyển cảm biến qua hai bề mặt.
-- **Theo dõi encoder trái/phải** và đặt bộ đếm xung về 0 ngay trong khung Encoder.
-- **Chỉnh P/I/D, tốc độ cơ bản và PWM tối đa**, lưu vào RAM ESP32 và bật/tắt chế độ bám line.
-- **Nhật ký giao tiếp và gửi lệnh thủ công** để hỗ trợ kiểm tra, chẩn đoán.
+## 🔌 Cấu hình phần cứng & Sơ đồ chân (Pinout)
 
-### Lưu ý kết nối
+### 1. Vi điều khiển
+* **ESP32 DevKit V1** (Dual-core 240MHz, 320KB RAM, 4MB Flash)
 
-- Chọn **Kết nối BLE** rồi chọn thiết bị `ESP32_Robot`, hoặc cắm cáp USB dữ liệu và chọn **Kết nối cáp USB**.
-- Với USB Serial, chọn đúng cổng COM; đóng Serial Monitor/PlatformIO Monitor trước khi kết nối. USB cần firmware hỗ trợ Serial ở `115200 baud`.
-- Khi dùng USB, trang gửi heartbeat; firmware tự dừng motor nếu mất heartbeat quá 1,5 giây.
-- Web Bluetooth trên iOS Safari và Chrome iOS không được hỗ trợ.
+### 2. Cảm biến 16 mắt (CD74HC4067 MUX)
+* Mắt hoạt động: **Mắt 1 đến Mắt 14** (Mắt 0 và 15 bỏ qua để tối ưu khoảng cách).
 
-## Phần cứng được đối chiếu từ schematic
+| Chân CD74HC4067 | Chân ESP32 | Chức năng |
+| :--- | :--- | :--- |
+| **S0 (A)** | `GPIO 18` | Chọn kênh Bit 0 |
+| **S1 (B)** | `GPIO 19` | Chọn kênh Bit 1 |
+| **S2 (C)** | `GPIO 21` | Chọn kênh Bit 2 |
+| **S3 (D)** | `GPIO 23` | Chọn kênh Bit 3 |
+| **SIG (Signal Out)** | `GPIO 36 (ADC1_CH0)` | Tín hiệu Analog đọc về ESP32 |
 
-Schematic [SCH_Following_line_ga25-370_2026-10-14 (1).json](<hardware/SCH_Following_line_ga25-370_2026-10-14 (1).json>) có:
+### 3. Nút nhấn.
 
-- **16 mắt cảm biến quang**, nối các kênh `S1`–`S16` vào mux analog 16 kênh `U24 (HP4067)`. Đây là 16 cảm biến riêng; không phải 8 mắt được nhân đôi.
-- Hai động cơ GA25-370, mỗi động cơ có encoder hai kênh (A/B), tổng cộng **4 tín hiệu encoder**.
+| **Nút CAL / START** | `GPIO34` | Bấm 1: calib TRẮNG (LED nháy nhanh), bấm 2: calib ĐEN (LED nháy chậm), bấm 3: START (S5–S10 có line); chống dội 50 ms |
+| **GPIO35** | Không dùng | Không cần nút START riêng |
 
-Các chân ESP32 dùng trong firmware:
+### 4. Động cơ & Driver (LEDC PWM 8-bit, 1000Hz)
+| Chân Driver | Chân ESP32 | Kênh PWM LEDC | Chiều quay |
+| :--- | :--- | :--- | :--- |
+| **IN_L1** | `GPIO 25` | Kênh 0 (`CH_L1`) | Động cơ Trái - Tiến |
+| **IN_L2** | `GPIO 26` | Kênh 1 (`CH_L2`) | Động cơ Trái - Lùi |
+| **IN_R1** | `GPIO 27` | Kênh 2 (`CH_R1`) | Động cơ Phải - Tiến |
+| **IN_R2** | `GPIO 13` | Kênh 3 (`CH_R2`) | Động cơ Phải - Lùi |
 
-| Chức năng | Chân ESP32 |
-| --- | --- |
-| Tín hiệu analog mux | GPIO36 |
-| Chọn kênh mux S0–S3 | GPIO17, GPIO18, GPIO19, GPIO23 |
-| Điều khiển cầu H: IN1–IN4 | GPIO26, GPIO25, GPIO27, GPIO13 |
-| Encoder trái A/B | GPIO21, GPIO22 |
-| Encoder phải A/B | GPIO32, GPIO33 |
+---
 
-Firmware phát giá trị analog 12-bit (0–4095) và chuỗi bit phát hiện line của đủ 16 kênh. Số encoder là bộ đếm xung quadrature có dấu, không phải RPM; muốn đổi sang RPM hoặc quãng đường cần xác nhận số xung/vòng và tỉ số truyền của đúng phiên bản GA25-370 đang dùng.
+## 📁 Kiến trúc Phần mềm & Cấu trúc Thư mục
 
-## Hướng dẫn nút trên web
+```text
+d:/sensor/
+├── include/
+│   ├── ble_control.h      # Khai báo dịch vụ BLE Nordic UART & giao tiếp telemetry
+│   ├── motor.h            # Khai báo điều khiển LEDC PWM 4 kênh động cơ
+│   ├── pid_controller.h   # Khai báo thuật toán PID và phân loại các Case dò line
+│   └── sensor.h           # Khai báo quét MUX 16 kênh, chuẩn hóa ADC và Calib
+├── src/
+│   ├── ble_control.cpp    # Triển khai BLE Server, xử lý lệnh và gửi trạng thái
+│   ├── main.cpp           # Khởi tạo hệ thống, vòng lặp điều khiển thời gian thực
+│   ├── motor.c            # Điều khiển động cơ tiến/lùi/phanh độc lập
+│   ├── pid_controller.c   # Thuật toán PID phi tuyến, bộ lọc IIR, xử lý cua 90°
+│   └── sensor.c           # Quét ADC qua MUX 74HC4067, tự tính ngưỡng tự động
+├── index.html             # Dashboard Web Bluetooth / Web Serial điều khiển xe
+├── platformio.ini         # Cấu hình biên dịch PlatformIO cho ESP32 DevKit V1
+└── README.md              # Tài liệu hướng dẫn hệ thống
+```
 
-| Nút / điều khiển | Tác dụng |
-| --- | --- |
-| **Kết nối ESP32 / Ngắt kết nối** | Mở hộp chọn thiết bị Bluetooth, kết nối hoặc ngắt kết nối. Khi kết nối, web gửi `SYNC` để yêu cầu trạng thái hiện tại. |
-| **▲ Tiến** | Chạy hai động cơ tiến trong lúc nhấn giữ; nhả nút để dừng hướng này. |
-| **▼ Lùi** | Chạy hai động cơ lùi trong lúc nhấn giữ; nhả nút để dừng hướng này. |
-| **◀ Xoay trái / ▶ Xoay phải** | Điều khiển hai động cơ ngược chiều để xoay tại chỗ trong lúc nhấn giữ; nhả nút để dừng. |
-| **DỪNG ĐỘNG CƠ** | Nhả mọi hướng đang giữ và gửi lệnh dừng ngay. Mất kết nối BLE làm firmware dừng motor. |
-| **Calib nền trắng** | Lấy mẫu trung bình 16 cảm biến trong 1 giây khi đặt dãy mắt trên nền trắng. |
-| **Calib vạch đen** | Lấy mẫu trung bình 16 cảm biến trong 1 giây khi đặt dãy mắt trên vạch đen. Cần calib cả trắng và đen để xác định line chính xác. |
-| **Calib di chuyển** | Trong 6 giây, di chuyển dãy cảm biến qua cả nền trắng và vạch đen; firmware tự ghi nhận min/max làm mốc. |
-| **Đọc lại trạng thái** | Yêu cầu ESP32 gửi lại cảm biến, encoder và trạng thái calib. |
-| **Đặt xung về 0** | Nút trong khung **Encoder GA25-370**, xóa bộ đếm trái/phải để bắt đầu phép đo mới; không phải hiệu chuẩn tốc độ động cơ. |
-| **Lưu vào ESP32** | Gửi P, I, D, tốc độ cơ bản và PWM tối đa vào RAM ESP32; các giá trị có hiệu lực ngay và mất khi tắt nguồn. |
-| **Chạy bám line / Dừng bám line** | Chạy bộ điều khiển PID với cấu hình hiện tại. Cần hiệu chuẩn cảm biến trước khi bắt đầu; nếu mất line, firmware dừng động cơ. |
-| **Xóa nhật ký** | Chỉ xóa nội dung nhật ký kết nối đang hiển thị trên trang. |
+---
 
-Khung cảm biến hiển thị **MẮT 01–16** theo thứ tự mux `S1`–`S16`. Giá trị analog dùng để kiểm tra tín hiệu; ô `LINE` được xác định từ bit cảm biến firmware gửi. Các nút calib cảm biến nằm trong hộp **Test động cơ**; nhật ký kết nối nằm dưới dãy cảm biến ở cột bên phải. Trong khung **Encoder GA25-370** có nút đặt xung về 0 và số xung tích lũy riêng của động cơ trái/phải.
 
-P/I/D mặc định lần lượt là `18`, `0` và `0.25`; tốc độ cơ bản mặc định là `150` và PWM tối đa là `255` (thang PWM 0–255). Tốc độ cơ bản là mức PWM chạy thẳng, còn PWM tối đa giới hạn đầu ra mỗi động cơ. Trang đọc lại cấu hình hiện tại từ ESP32 khi kết nối hoặc bấm **Đọc lại trạng thái**. Cấu hình chỉ được giữ trong RAM, không lưu qua lần khởi động lại.
 
-## Cấu trúc firmware
+## 📡 Tập lệnh điều khiển qua BLE / Serial Terminal
 
-`src/main.cpp` chỉ khởi tạo và điều phối các module trong `lib/`. Mỗi module có file `.h` để khai báo giao diện và file `.cpp` chứa phần cài đặt:
+Bạn có thể gửi các lệnh sau từ máy tính (qua cáp USB 115200 baud) hoặc từ điện thoại (qua Bluetooth BLE UART):
 
-- `BLEcontrol`: BLE, xử lý lệnh từ trang web và gửi telemetry.
-- `Button`: trạng thái nhấn/nhả và điều khiển thủ công.
-- `Encoder`: ngắt đọc xung, đọc và đặt lại bộ đếm.
-- `Motor`: thiết lập chân và điều khiển hai động cơ.
-- `PID`: thông số PID và điều khiển bám line.
-- `Sensor`: đọc 16 cảm biến, hiệu chuẩn và tính vị trí line.
+| Lệnh | Ý nghĩa & Chức năng |
+| :--- | :--- |
+| **`AUTO`** / **`A`** / **`START`** | Bật PID dò line nếu calibration hợp lệ và E-STOP không khóa |
+| **`M`** hoặc **`MANUAL`** | **TẮT** tự động, chuyển sang lái tay |
+| **`ESTOP`** | Dừng PWM, tắt AUTO, chốt khóa khẩn cấp phần mềm |
+| **`RESET_ESTOP`** | Mở khóa nhưng động cơ vẫn dừng |
+| **`STATUS`** | Đọc trạng thái AUTO, calibration, `estop=0/1`, PWM |
+| **`CAL_WHITE`** / **`C`** | Bắt đầu lấy mẫu 16 mắt trên nền **trắng** |
+| **`CAL_BLACK`** | Sau `CAL_WHITE_DONE`, bắt đầu lấy mẫu trên nền **đen** và lưu NVS nếu đạt |
+| **`CAL_STATUS`** | Xem trạng thái hiệu chuẩn trên ESP32 |
+| **`CAL_DUMP`** | Đọc 16 cặp trắng/đen/threshold từ ESP32 qua SPP hoặc USB |
+| **`BASE:xxx`** | Chỉnh tốc độ cơ sở (mặc định `BASE:120`) |
+| **`KP:x.x`** | Chỉnh hệ số tỉ lệ Kp (mặc định `KP:2.2`) |
+| **`KI:x.x`** | Chỉnh hệ số tích phân Ki (mặc định `KI:0`) |
+| **`KD:x.x`** | Chỉnh hệ số vi phân Kd (mặc định `KD:0`; D = Kd × (e[k] − e[k−1]) / dt, với dt đo bằng giây) |
+| **`V:xxx`** | Chỉnh tốc độ tay và tốc độ cơ sở PID (0–255) |
+| **`PWM`** | Xem giá trị PWM 2 bánh và sai số tức thời |
+| **`PID`** | Xem các thông số PID và Base Speed hiện tại |
+| **`F` / `B` / `L` / `R` / `S`** | Lái tay: Tiến / Lùi / Trái / Phải / Dừng xe |
 
-Trang web là nội dung tĩnh trong `web/index.html`, được deploy riêng bằng GitHub Pages; firmware không tạo HTML. Module BLE xử lý BLE UART, đồng thời firmware nhận lệnh và phát cùng giao thức telemetry qua USB Serial ở `115200 baud`.
+---
 
-## Cài đặt và nạp firmware
+## 💻 Giao diện Web Dashboard (`index.html`)
 
-1. Cài PlatformIO và mở thư mục dự án.
-2. Nạp firmware cho `esp32doit-devkit-v1`.
-3. Cấp nguồn đúng điện áp cho ESP32 và driver động cơ. Khi thử hướng motor lần đầu, kê bánh xe khỏi mặt đất và nhấn **DỪNG ĐỘNG CƠ** nếu chiều quay hoặc đấu dây không đúng.
-4. Mở HIGH-SPEED BLE qua link HTTPS ở trên, kết nối bằng BLE hoặc USB Serial rồi thử từng chức năng.
+Dự án tích hợp sẵn file [index.html](index.html) là một Dashboard điều khiển trực quan bằng công nghệ **Web Bluetooth API** và **Web Serial API** (chạy trực tiếp trên Google Chrome / Microsoft Edge mà không cần cài thêm app):
 
-Lệnh BLE sử dụng Nordic UART Service (NUS):
+1. **Thanh 16 LED cảm biến:** Hiển thị thời gian thực trạng thái nhận diện đen/trắng của từng mắt từ 0 đến 15.
+2. **Telemetry động cơ:** Hiển thị trực quan tốc độ PWM bánh trái/phải, sai số lệch tâm `Err`, và trạng thái `Case`.
+3. **Bàn phím ảo D-pad & Thanh trượt:** Lái tay, điều chỉnh tốc độ, chuyển đổi Auto/Manual nhanh chóng.
+4. **Terminal tích hợp:** Gửi và nhận lệnh gỡ lỗi trực tiếp qua Bluetooth.
 
-| Thành phần | UUID | Hướng |
-| --- | --- | --- |
-| Service | `6e400001-b5a3-f393-e0a9-e50e24dcca9e` | — |
-| RX | `6e400002-b5a3-f393-e0a9-e50e24dcca9e` | Web → ESP32 |
-| TX | `6e400003-b5a3-f393-e0a9-e50e24dcca9e` | ESP32 → Web |
+---
 
-Các nút motor dùng lệnh nhấn/nhả `!B51`/`!B50` (tiến), `!B61`/`!B60` (lùi), `!B71`/`!B70` (trái), `!B81`/`!B80` (phải). Những lệnh chức năng khác: `STOP`, `FOLLOW:1`/`FOLLOW:0`, `P:<giá_trị>`, `I:<giá_trị>`, `D:<giá_trị>`, `V:<tốc_độ>`, `W:<PWM_tối_đa>`, `CAL_WHITE`, `CAL_BLACK`, `CAL_MOVE`, `ENC_RESET`, `SYNC`. Telemetry gồm các gói analog `A<chỉ_số>:` (được chia nhỏ để tương thích giới hạn BLE), `D:`, `POS:`, `ERR:`, `ENC_L:`, `ENC_R:`, `CAL:`, trạng thái bám line `FOLLOW:` và cấu hình `P:`, `I:`, `D:`, `V:`, `W:`.
+## 🛠️ Hướng dẫn cài đặt & Nạp code (PlatformIO)
+
+### 1. Chuẩn bị môi trường
+- Cài đặt [VS Code](https://code.visualstudio.com/)
+- Cài đặt extension **PlatformIO IDE** trong VS Code.
+
+### 2. Biên dịch & Nạp code
+Mở Terminal tại thư mục dự án và chạy:
+
+```bash
+# 1. Biên dịch kiểm tra mã nguồn
+pio run
+
+# 2. Cắm cáp nạp firmware vào ESP32
+pio run -t upload
+
+# 3. Mở Serial Monitor theo dõi
+pio run -t monitor
+```
+
+---
+
+## 🏆 Bản quyền & Tác giả
+- **Tác giả:** [congdoan23082006-svg](https://github.com/congdoan23082006-svg)
+- **Organization:** [clb-robot-line-2026](https://github.com/clb-robot-line-2026)
+- **Repository:** [ECcodedoline](https://github.com/clb-robot-line-2026/ECcodedoline.git)
+- Giấy phép: MIT License.
+
+
+## Hiệu chuẩn 16 mắt — mainv4 Bluetooth Classic
+
+1. Đặt đủ 16 mắt lên cùng một mặt **trắng** đồng nhất, giữ nguyên chiều cao, gửi `CAL_WHITE` qua Python App / SPP, chờ `CAL_WHITE_DONE`.
+2. Chuyển đủ 16 mắt sang cùng một mặt **đen** đồng nhất, gửi `CAL_BLACK` qua Python App / SPP, chờ `CAL_OK_SAVED`.
+3. `CAL_FAILED` có nghĩa là độ tương phản của ít nhất một mắt < 150 ADC, nhiễu quá lớn, hoặc không ghi được NVS; dữ liệu hợp lệ cũ được giữ nguyên.
+4. Gửi `CAL_DUMP` để đọc 16 mức white/black được lưu và ngưỡng riêng (40% độ tương phản) của từng mắt; app Python `robot_debug.py` tự truy vấn NVS sau khi kết nối.
+5. Nếu ESP32 mất nguồn, firmware tự tải lại profile NVS hợp lệ. Cực tính phần cứng cố định: **ADC đen > ADC trắng**; `INV` không còn đảo cực.
+
+SPP device: **`LineRobot`**; BLE Web **không được khởi tạo trong `mainv4`**. Protocol telemetry 72 byte và các chức năng PID/encoder giữ nguyên.
+
+## Debug SPP và CSV trong app Python (mainv4)
+
+- **Không có ngưỡng RAW chung** cho 16 mắt. Mắt `i` có `T_i = white_i + ceil(0.40 * (black_i - white_i))` tải từ NVS bằng `CAL_DUMP`. `CAL_i = clamp(1000*(ADC_i-white_i)/(black_i-white_i),0,1000)`; `logic_i = (CAL_i >= 400)`. `0=TRẮNG`, `1=ĐEN`. Trước khi đọc đủ NVS, app hiện `—`, không đoán logic theo ngưỡng giả.
+- **App:** `robot_debug.py` có nút `Bảng 16 mắt` hiển thị RAW, W, B, T_i, CAL, logic từng mắt; terminal `Mở rộng`, `Xuất TXT`, `Xuất CSV`. Tùy chọn `Xem mẫu PID` mặc định bật, chỉ in 5 Hz để không tràn terminal; `Ghi CSV` lưu **toàn bộ** telemetry ở tần số nhận được, không giảm mẫu.
+- **SPP telemetry:** giữ nguyên 72 byte/frame, header `AA 55`, payload 69 byte (`<I16H2i2h5fB`), byte XOR; để tương thích app cũ. Payload chứa `t_ms` tại snapshot sau PID, `adc0..15` raw 12-bit, `encL/encR` signed quadrature x4, `pwmL/pwmR` sau điều khiển (có dấu), `err,p,i,d,out,mode`. Dữ liệu đã chuẩn hóa và 16 bit logic do app **tính từ profile NVS thực**; không gửi lặp 16 giá trị CAL/logic qua Bluetooth.
+- **Tần số gửi:** mặc định 100 Hz (72×100 = 7200 bytes/s dữ liệu ứng dụng), có thể chỉnh `STREAM:20`, `STREAM:50`, `STREAM:100`, `STREAM:200`, `STREAM:300` hoặc `STREAM:0` (tạm ngừng). `STREAM` truy vấn trạng thái. Không gửi các dòng TXT cho từng mẫu trên ESP32. Tần số thực đo phụ thuộc tốc độ quét ADC/vòng lặp và kết nối SPP; kiểm tra `tx=...Hz`, tỷ lệ lỗi gói và `loop=...Hz`. Lịch TX dùng pha cộng dồn, bỏ lượt quá hạn (không gửi dồn). Đã bỏ `delay(5)` trong `loop()` và dùng `yield()` để nhường scheduler; `delay(300)` trong `setup()` vẫn giữ nguyên.
+- **CSV:** cột `host_iso` là thời gian PC nhận/xử lý, `t_ms` là đồng hồ ESP32, `adc0..15`, `cal0..15`, `logic0..15`, encoder, PWM, PID và chuỗi `logic16`. Các cột CAL/logic để trống trước khi tải đủ profile NVS. Xuất CSV lưu tối đa 15.000 mẫu gần nhất; `Ghi CSV` ghi liên tục để thu thập thí nghiệm dài hơn. Xuất TXT chỉ là log lệnh/trạng thái/PID preview, không thay thế CSV toàn tốc độ.
+- **Kết nối:** tên Classic SPP là `LineRobot`; COM Windows chọn `Outgoing`. `COM4` kiểu CP210x chỉ là cổng USB trên máy người dùng ví dụ, không phải SPP.
+
+
+## Tinh chỉnh ngưỡng phát hiện đen (400/1000)
+
+- Ngưỡng cũ: midpoint = 50% khoảng trắng→đen. Ngưỡng mới: 40% khoảng tương phản, giảm nhẹ để line đen yếu được phát hiện sớm hơn.
+- **Mỗi mắt có ngưỡng RAW riêng**: `T_i = W_i + ceil((B_i - W_i) * 400 / 1000)` (ADC đen cao hơn ADC trắng). `0 = TRẮNG` khi ADC dưới ngưỡng; `1 = ĐEN` khi ADC >= ngưỡng.
+- NVS chỉ chứa W/B; firmware tự tính ngưỡng 40% khi khởi động. Không cần hiệu chuẩn lại nếu profile NVS cũ vẫn hợp lệ.
+- Thuật toán PID dùng đúng ngưỡng đen của từng mắt, thống nhất với hiển thị/CSV của app Python. Bộ lọc trọng tâm `CAL >= 150` được giữ nguyên, tránh thay đổi quá nhiều tầng điều khiển cùng lúc.
+- **Chất lượng calibration** vẫn dùng chênh lệch >=150 ADC và độ nhiễu <=90; không hạ các ngưỡng kiểm tra chất lượng này.
+- Hạ ngưỡng tăng độ nhạy nhưng có thể tăng dương tính giả nếu mặt trắng tối/nhiễu; thử trên robot thực và kiểm tra tất cả 16 mắt trước khi chạy nhanh.
+
+### Profiling vòng loop/PID (mainv4)
+
+Mỗi giây, USB terminal in `[PERF]` và `[PERF_LOOP]`. Các trường `adc_us`, `pid_us`, `comm_us`, `tx_us`, `busy_us` có dạng trung bình/cao nhất tính bằng microgiây; `other_us` là phần không nằm trong các khối đo riêng. `period_us=min/avg/max` đo khoảng cách giữa hai lần bắt đầu loop, `jitter_pp_us=max-min`. `peak_observed_hz` là đỉnh đã quan sát; `ceiling_busy_hz` và `ceiling_adc_hz` chỉ là giới hạn lạc quan suy từ thời gian đo, KHÔNG phải Hz đã đạt ổn định. `TASKS` in thống kê runtime FreeRTOS nếu framework có bật trace/runtime stats, nếu không sẽ báo không khả dụng. Các thời gian đo trong `[PERF]` không phải % CPU theo task. Khi đang hiệu chuẩn, `adc_us` có thể bao gồm thống kê và thao tác NVS. Hãy đo khi BT tắt, BT+STREAM:100, rồi AUTO với bánh xe kê lên để đối chiếu.
+
+### Python App: bắt đầu và dừng khẩn cấp (mainv4)
+
+`robot_debug.py` có nút **BẮT ĐẦU DÒ LINE** và **DỪNG KHẨN CẤP** (hoặc phím Esc). Dừng khẩn cấp gửi `ESTOP`, firmware trả `ESTOP: LATCHED`. Bấm **Mở khóa E-STOP** rồi đợi `ESTOP: CLEARED (MOTORS OFF)` trước khi bắt đầu lại. Không có tự động chạy khi mở khóa. Bốn nút preset Siêu bám / 3S / 2S / Race đã bỏ ở app và firmware. Giao thức SPP 72 byte vẫn tương thích. Đây là dừng phần mềm qua Bluetooth, không thay thế công tắc ngắt nguồn động cơ vật lý.
