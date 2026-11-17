@@ -141,11 +141,6 @@ pio run -t monitor
 
 ---
 
-## 🏆 Bản quyền & Tác giả
-- **Tác giả:** [congdoan23082006-svg](https://github.com/congdoan23082006-svg)
-- **Organization:** [clb-robot-line-2026](https://github.com/clb-robot-line-2026)
-- **Repository:** [ECcodedoline](https://github.com/clb-robot-line-2026/ECcodedoline.git)
-- Giấy phép: MIT License.
 
 
 ## Hiệu chuẩn 16 mắt — mainv4 Bluetooth Classic
@@ -177,10 +172,10 @@ SPP device: **`LineRobot`**; BLE Web **không được khởi tạo trong `mainv
 - **Chất lượng calibration** vẫn dùng chênh lệch >=150 ADC và độ nhiễu <=90; không hạ các ngưỡng kiểm tra chất lượng này.
 - Hạ ngưỡng tăng độ nhạy nhưng có thể tăng dương tính giả nếu mặt trắng tối/nhiễu; thử trên robot thực và kiểm tra tất cả 16 mắt trước khi chạy nhanh.
 
-### Profiling vòng loop/PID (mainv4)
+### Profiling vòng loop/PID 
 
 Mỗi giây, USB terminal in `[PERF]` và `[PERF_LOOP]`. Các trường `adc_us`, `pid_us`, `comm_us`, `tx_us`, `busy_us` có dạng trung bình/cao nhất tính bằng microgiây; `other_us` là phần không nằm trong các khối đo riêng. `period_us=min/avg/max` đo khoảng cách giữa hai lần bắt đầu loop, `jitter_pp_us=max-min`. `peak_observed_hz` là đỉnh đã quan sát; `ceiling_busy_hz` và `ceiling_adc_hz` chỉ là giới hạn lạc quan suy từ thời gian đo, KHÔNG phải Hz đã đạt ổn định. `TASKS` in thống kê runtime FreeRTOS nếu framework có bật trace/runtime stats, nếu không sẽ báo không khả dụng. Các thời gian đo trong `[PERF]` không phải % CPU theo task. Khi đang hiệu chuẩn, `adc_us` có thể bao gồm thống kê và thao tác NVS. Hãy đo khi BT tắt, BT+STREAM:100, rồi AUTO với bánh xe kê lên để đối chiếu.
 
-### Python App: bắt đầu và dừng khẩn cấp (mainv4)
+### Python App: bắt đầu và dừng khẩn cấp 
 
 `robot_debug.py` có nút **BẮT ĐẦU DÒ LINE** và **DỪNG KHẨN CẤP** (hoặc phím Esc). Dừng khẩn cấp gửi `ESTOP`, firmware trả `ESTOP: LATCHED`. Bấm **Mở khóa E-STOP** rồi đợi `ESTOP: CLEARED (MOTORS OFF)` trước khi bắt đầu lại. Không có tự động chạy khi mở khóa. Bốn nút preset Siêu bám / 3S / 2S / Race đã bỏ ở app và firmware. Giao thức SPP 72 byte vẫn tương thích. Đây là dừng phần mềm qua Bluetooth, không thay thế công tắc ngắt nguồn động cơ vật lý.
